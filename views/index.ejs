@@ -3,6 +3,7 @@
 
 <head>
   <title><%= title %></title>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <!-- <script src="https://kit.fontawesome.com/0a2b8cf434.js" crossorigin="anonymous"></script> -->
   <link rel="icon" href="/images/favicon.svg">
   <link rel="stylesheet" href="/stylesheets/momentum-ui-icons.min.css">
@@ -34,15 +35,13 @@
         <!-- Note: conditionally show top-bar__user or top-bar__logged-out -->
         <div class="md-top-bar__user">
           <button class="md-avatar md-button md-button--circle md-button--link">
-            CU
+            MS
           </button>
         </div>
       </div>
     </div>
   </header>
-  <div>
 
-  </div>
   <div class="main-container">
     <div class="outer-wrap">
       <div class="content">
@@ -52,7 +51,7 @@
             <article class="card">
               <div class="card-content">
                 <form ref='uploadForm' id='uploadForm' action='/upload' method='post' encType="multipart/form-data">
-                  <h2>Upload a macro to Websrv2 <i class="icon icon-cloud-upload_24"></i></h2>
+                  <h2>Upload a file to Websrv2 <i class="icon icon-cloud-upload_24"></i></h2>
                   <hr><br><br>
                   <div style="
                 display: flex;
@@ -80,7 +79,7 @@
 
                 </form>
                 <br><br>
-                <form action="/deleteFile" method="POST">
+                <form id="removeFileFromServer" action="/deleteFile" method="POST">
                   <h2>Remove a File from Websrv2 <i class="icon icon-file-excel_28"></i></h2>
                   <hr>
                   <label><b>Select file :</b></label><br><br>
@@ -163,7 +162,7 @@
                   </table>
                   <br>
                   <label for="deviceId"><b>Select Device : </b></label><br><br>
-                  <div class="scroll-div" style="overflow: scroll;height: 15rem;">
+                  <div class="scroll-div" style="overflow: scroll;height: 17rem;">
                     <% var cpt2 = 0; %>
                     <% for (device of devices) { %>
                     <% if(device.connectionStatus === "disconnected"){ %>
@@ -207,18 +206,18 @@
 
             <article class="card">
               <div class="card-content">
-                <form id="removeAllMacroFromDevice" action="/removeAllMacro" method="POST">
+                <form id="removeAllFileFromDevice" action="/removeAllFile" method="POST">
                   <h2>Remove all files from a device <i class="icon icon-delete_24"></i></h2>
                   <hr>
 
                   <div class="md-input-container md-checkbox" style="display: flex;
                     flex-direction: row;
                     justify-content: space-between;">
-                    <input name="allMacro" id="all-macro-checkbox" type="checkbox" class="md-input md-checkbox__input" checked>
+                    <input name="allMacro" id="all-macro-checkbox" type="checkbox" class="md-input md-checkbox__input check-remove-type" checked>
                     <label class="md-checkbox__label" for="all-macro-checkbox">
                       <span>Remove All Macro</span>
                     </label>
-                    <input name="allPanel" id="all-panel-checkbox" type="checkbox" class="md-input md-checkbox__input" checked>
+                    <input name="allPanel" id="all-panel-checkbox" type="checkbox" class="md-input md-checkbox__input check-remove-type" checked>
                     <label class="md-checkbox__label" for="all-panel-checkbox">
                       <span>Remove All Panel</span>
                     </label>
@@ -297,7 +296,8 @@
   </div> -->
 
     <div>
-      <h2>Edit Device <i class="icon icon-edit_24"></i></h2><br>
+      <!--<h2>Edit Device <i class="icon icon-edit_24"></i></h2><br>-->
+      <h2>Device List</h2><br>
       <table>
         <thead>
           <tr>
@@ -308,7 +308,7 @@
         </thead>
         <% for (device of devices) { %>
         <tr>
-          <td><a href="#"><%= device.displayName %></a></td>
+          <td><a href="/edit-device/<%=device.id%>"><%= device.displayName %></a></td>
           <td>
             <% if(device.connectionStatus === "disconnected"){ %>
             <p class="status status-unpaid"><%= device.connectionStatus %></p>
@@ -319,55 +319,64 @@
           </td>
         </tr>
         <% } %>
-
-
-        <!-- <tr>
-            <td><a href="#">INV1002</a></td>
-            <td>Sonic</td>
-            <td>1/4/2021</td>
-            <td>
-              <p class="status status-paid">Paid</p>
-            </td>
-    
-          </tr>
-          <tr>
-            <td><a href="#">INV1003</a></td>
-            <td>Innercircle</td>
-            <td>1/2/2021</td>
-            <td>
-              <p class="status status-pending">Pending</p>
-            </td>
-    
-          </tr>
-          <tr>
-            <td><a href="#">INV1004</a></td>
-            <td>Varsity Plus</td>
-            <td>12/30/2020</td>
-            <td>
-              <p class="status status-pending">Pending</p>
-            </td>
-    
-          </tr>
-          <tr>
-            <td><a href="#">INV1005</a></td>
-            <td>Highlander</td>
-            <td>12/18/2020</td>
-            <td>
-              <p class="status status-paid">Paid</p>
-            </td>
-    
-          </tr> -->
         </tr>
 
       </table>
     </div>
   </div>
+  <div id="notification" class="notification" hidden>
+    <div class="md-alert md-alert--success">
+      <div class="md-alert__icon"></div>
+      <div class="md-alert__content">
+        <div id="notification-title" class="md-alert__title">Title goes here</div>
+        <div id="notification-msg" class="md-alert__message">
+          Success text here. Lorem ipsum dolor sit amet, consectetur.
+        </div>
+      </div>
+      <div class="md-alert__button">
+        <button id="remove-notification" type="button" class="md-button md-button--circle md-button--large">
+          <span class="md-button__children icon icon-cancel_14"></span>
+        </button>
+      </div>
+    </div>
 
 </body>
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 <script>
   $(document).ready(function () {
+    var timer = null;
+    function showNotification(type, title, msg) {
+      //remove class
+      $("#notification").find(">:first-child").removeClass("md-alert--success");
+      $("#notification").find(">:first-child").removeClass("md-alert--error");
+
+      //remove previous notification
+      $("#notification").hide();
+
+      //add specified class
+      $("#notification").find(">:first-child").addClass(type);
+      $("#notification-title").html(title);
+      $("#notification-msg").html(msg);
+      $("#notification").show('slow');
+      if(!(timer === null)){
+          clearTimeout(timer);
+          timeout = null;
+      }
+      timer = setTimeout(() => {
+        $("#notification").hide('slow');
+      }, 5000);
+    }
+
+    $("#remove-notification").click(function () {
+      if($("#notification").find(">:first-child").hasClass("md-alert--success")){
+        $("#notification").find(">:first-child").removeClass("md-alert--success");
+      }
+      else{
+        $("#notification").find(">:first-child").removeClass("md-alert--error");
+      }
+      $("#notification").hide();
+    });
 
     $('.scroll-div').scroll();
     $(".scroll-div").animate({
@@ -381,7 +390,6 @@
 
     //Switch table (panel or macro)
     $("#switchTable").click(function () {
-      // assumes element with id='button'
       $("#panelTable").toggle();
       $("#macroTable").toggle();
     });
@@ -399,16 +407,74 @@
         //prevent the default form submit if it is not checked
         e.preventDefault();
       }
+
+      if($('.check-device').is(':checked') && $('.check').is(':checked')){
+        e.preventDefault(); // avoid to execute the actual submit of the form.
+        var form = $(this);
+        var url = form.attr('action');
+        $.ajax({
+                  type: "POST",
+                  url: url,
+                  dataType: 'json',
+                  data: form.serialize() // serializes the form's elements.
+            })
+        .done(
+        function(response) {
+          if(response.code === "204"){
+              showNotification("md-alert--success", "Success", "the macro has been sent successfully")
+          }
+          else if(response.code === "500"){
+              showNotification("md-alert--error", "Error", "error : "+ response.msg)
+          }
+          }
+        ); 
+      }
     });
 
-    $('#removeAllMacroFromDevice').submit(function (e) {
+    $('#removeAllFileFromDevice').submit(function (e) {
+      if(!$('.check-remove-type').is(':checked')) {
+        alert("Choose at least one remove type.");
+        //prevent the default form submit if it is not checked
+        e.preventDefault();
+        return
+      }
       //check atleat 1 checkbox is checked
       if (!$('.check-device-all-macro').is(':checked')) {
         alert("Choose at least one device");
         //prevent the default form submit if it is not checked
         e.preventDefault();
+        return
+      }
+      e.preventDefault();
+      if(confirm('Are you sure you want to remove these files')){
+        var form = $(this);
+        var url = form.attr('action');
+        $.ajax({
+                  type: "POST",
+                  url: url,
+                  dataType: 'json',
+                  data: form.serialize() // serializes the form's elements.
+            })
+        .done(
+        function(response) {
+          if(response.code === "204"){
+              showNotification("md-alert--success", "Success", "Files has been successfully removed")
+          }
+          else if(response.code === "500"){
+              showNotification("md-alert--error", "Error", "error : "+ response.msg)
+          }
+          }
+        ); 
       }
     });
+
+    $('#removeFileFromServer').submit(function (e) {
+      if(!confirm('Are you sure you want to remove this file')){
+        e.preventDefault();
+        return
+      }
+    });
+    
 
     //To enable or disable macro on installation
     $('.id-check').change(function () {

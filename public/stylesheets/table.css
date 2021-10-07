@@ -1,5 +1,4 @@
-
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
 *,
 *::before,
 *::after {
@@ -8,7 +7,13 @@
   padding: 0;
 }
 
+tr {
+  border: 1px solid black;
+}
+
 table {
+  table-layout: fixed;
+  border: 1px solid black;
   border-collapse: collapse;
   box-shadow: 0 5px 10px #e1e5ee;
   background-color: white;
@@ -16,54 +21,61 @@ table {
   overflow: hidden;
   width: 100%;
 }
-  thead {
-    box-shadow: 0 5px 10px #e1e5ee;
-  }
-
-  th {
-    padding: 1rem 2rem;
-    letter-spacing: 0.1rem;
-    font-size: 0.7rem;
-    font-weight: 900;
-  }
-
-  td {
-    padding: 1rem 2rem;
-  }
-
-  a {
-    text-decoration: none;
-    color:#2962ff;
-  }
-
-  .status {
-    border-radius:  0.2rem;
-    background-color: red;
-    padding: 0.2rem 1rem;
-    text-align: center;
+thead {
+  box-shadow: 0 5px 10px #e1e5ee;
 }
-   .status-pending {
-      background-color: #fff0c2;
-      color: #a68b00;
-    }
 
-     .status-paid {
-      background-color: #c8e6c9;
-      color:  #388e3c;
-    }
+th {
+  padding: 1rem 2rem;
+  letter-spacing: 0.1rem;
+  font-size: 0.7rem;
+  font-weight: 900;
+}
 
-      .status-unpaid {
-      background-color: #ffcdd2;
-      color: #c62828;
-    }
-  
+td {
+  padding: 1rem 2rem;
+}
 
-  .amount {
-    text-align: right;
+a {
+  text-decoration: none;
+  color: #2962ff;
+}
+
+.status {
+  border-radius: 0.2rem;
+  background-color: red;
+  padding: 0.2rem 1rem;
+  text-align: center;
+}
+.status-pending {
+  background-color: #fff0c2;
+  color: #a68b00;
+}
+
+.status-paid {
+  background-color: #c8e6c9;
+  color: #388e3c;
+}
+
+.status-unpaid {
+  background-color: #ffcdd2;
+  color: #c62828;
+}
+
+.amount {
+  text-align: right;
+}
+
+tr:nth-child(even) {
+  background-color: #f4f6fb;
+}
+
+@media screen and (min-width: 60em) {
+  th {
+    padding: 0.5rem 0.5rem;
   }
 
- 
-  tr:nth-child(even) {
-    background-color: #f4f6fb;
+  table .md-checkbox .md-checkbox__label {
+    font-size: 0.7rem;
   }
- 
+}

@@ -114,6 +114,7 @@
   }
   
   @media screen and (min-width: 60em) {
+      .main-area {padding: 0em;}
       .cards {
           margin-top: inherit;
       }

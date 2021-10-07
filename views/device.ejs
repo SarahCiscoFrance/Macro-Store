@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title><%= title %></title>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <!-- <script src="https://kit.fontawesome.com/0a2b8cf434.js" crossorigin="anonymous"></script> -->
+  <link rel="icon" href="/images/favicon.svg">
+  <link rel="stylesheet" href="/stylesheets/momentum-ui-icons.min.css">
+  <link rel="stylesheet" href="/stylesheets/momentum-ui.min.css">
+  <link rel='stylesheet' href='/stylesheets/style.css' />
+  <link rel='stylesheet' href='/stylesheets/card-style.css' />
+</head>
+
+<body>
+  <header class="md-top-bar md-top-bar--blue" role="navigation">
+    <div class="md-top-bar__container">
+      <div class="md-top-bar__brand">
+        <a class="md-brand" href="/">
+          <div class="md-brand__logo md-brand__logo--pad">
+            <!-- Note: use either image or icon, but not both -->
+            <!-- img src="/assets/spark-logo.svg" alt="Momentum UI" -->
+            <i class="icon icon-cisco-logo"></i>
+          </div>
+          <div class="md-brand__title"><%= title %> </i></div>
+        </a>
+      </div>
+      <nav class="md-top-bar__nav ">
+        <div class="md-list md-list--horizontal" role="list">
+          <!-- <a class="md-list-item active" role="listItem" href="javascript:void(0)">Develop</a> -->
+        </div>
+      </nav>
+      <div class="md-top-bar__right ">
+        <!-- Note: conditionally show top-bar__user or top-bar__logged-out -->
+        <div class="md-top-bar__user">
+          <button class="md-avatar md-button md-button--circle md-button--link">
+            MS
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div style="display: flex;justify-content: center; padding: 5%;">
+    <div class="md-data-table" style="width: 60%;">
+      <div class="md-data-table__wrapper">
+        <table class="testTableClass">
+          <thead class="md-data-table__thead">
+            <tr>
+              <th style="width: 8rem">Macro Name</th>
+              <th style="width: 1rem">Active</th>
+            </tr>
+          </thead>
+          <tbody
+            class="md-data-table__tbody">
+            <% if(macros !== undefined) { %>
+              <% if( macros.length > 0) { %>
+                <% for (macro of macros) { %>
+                  <tr><td><%= macro.Name %></td><td> <%= macro.Active %> </td></tr>
+                <% } %>
+              <% } %>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  
+
+
+
+</body>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script>
+  $(document).ready(function () {
+    
+  });
+</script>
+
+</html>
