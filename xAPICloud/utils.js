@@ -9,7 +9,7 @@ module.exports = {
    * @param {string} transpile Translates current JavaScript language features into EcmaScript 5.0/5.1. Use "True" or "False".
    * @param {string} macroContent The content of the macro
    */
-  saveMacro: function(deviceId, macroName, overWrite, transpile, macroContent) {
+  saveMacro: function (deviceId, macroName, overWrite, transpile, macroContent) {
     return new Promise(resolve => {
       var options = {
         method: "POST",
@@ -28,14 +28,14 @@ module.exports = {
           body: macroContent
         })
       };
-      request(options, function(error, response) {
+      request(options, function (error, response) {
         if (error) throw new Error(error);
         resolve(response.body);
       });
     });
   },
 
-  getDevices: function() {
+  getDevices: function () {
     return new Promise(resolve => {
       var options = {
         method: "GET",
@@ -45,22 +45,41 @@ module.exports = {
           "Content-Type": "application/json"
         }
       };
-      request(options, function(error, response) {
+      request(options, function (error, response) {
         if (error) throw new Error(error);
         resolve(JSON.parse(response.body).items);
       });
     });
   },
 
+  getDeviceDetail: function (deviceId) {
+    return new Promise(resolve => {
+      var options = {
+        'method': 'GET',
+        'url': 'https://webexapis.com/v1/devices/' + deviceId,
+        'headers': {
+          'Authorization': 'Bearer ' + process.env.BOT_TOKEN
+        }
+      };
+      request(options, function (error, response) {
+        if (error) throw new Error(error);
+        resolve(JSON.parse(response.body));
+      });
+    });
+  },
+
   /**
-   * Activates a macro created on this device
+   * Activates or Deactivates a macro created/running on this device
    * @param {string} deviceId The ID of the device
    * @param {string} macroName Specifies the name of the macro to activate
+   * @param {boolean} active true for activation or false for desactivtion
    */
-  activateMacro: function(deviceId, macroName) {
+  setMacroActivation: function (deviceId, macroName, active) {
+    var url = "https://webexapis.com/v1/xapi/command/Macros.Macro." + (active ? "Activate" : "Deactivate");
+    console.log(url);
     var options = {
       method: "POST",
-      url: "https://webexapis.com/v1/xapi/command/Macros.Macro.Activate",
+      url: url,
       headers: {
         Authorization: "Bearer " + process.env.BOT_TOKEN,
         "Content-Type": "application/json"
@@ -72,7 +91,7 @@ module.exports = {
         }
       })
     };
-    request(options, function(error, response) {
+    request(options, function (error, response) {
       if (error) throw new Error(error);
       console.log(response.body);
     });
@@ -82,7 +101,7 @@ module.exports = {
    * Removes all of the macros created on this device.
    * @param {string} deviceId The ID of the device
    */
-  removeAllMacro: function(deviceId) {
+  removeAllMacro: function (deviceId) {
     var options = {
       method: "POST",
       url: "https://webexapis.com/v1/xapi/command/Macros.Macro.RemoveAll",
@@ -95,17 +114,37 @@ module.exports = {
         arguments: {}
       })
     };
-    request(options, function(error, response) {
+    request(options, function (error, response) {
       if (error) throw new Error(error);
       //console.log(response.body);
     });
   },
 
-  savePanel: function(deviceId, PanelId, xml) {
+  removeMacro: function (deviceId, macroName) {
     var options = {
       method: "POST",
-      url:
-        "https://webexapis.com/v1/xapi/command/UserInterface.Extensions.Panel.Save",
+      url: "https://webexapis.com/v1/xapi/command/Macros.Macro.Remove",
+      headers: {
+        Authorization: "Bearer " + process.env.BOT_TOKEN,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        deviceId: deviceId,
+        arguments: {
+          "Name": macroName
+        }
+      })
+    };
+    request(options, function (error, response) {
+      if (error) throw new Error(error);
+      //console.log(response.body);
+    });
+  },
+
+  savePanel: function (deviceId, PanelId, xml) {
+    var options = {
+      method: "POST",
+      url: "https://webexapis.com/v1/xapi/command/UserInterface.Extensions.Panel.Save",
       headers: {
         Authorization: "Bearer " + process.env.BOT_TOKEN,
         "Content-Type": "application/json"
@@ -118,17 +157,16 @@ module.exports = {
         body: xml.replace(/(\r\n|\n|\r)/gm, "")
       })
     };
-    request(options, function(error, response) {
+    request(options, function (error, response) {
       if (error) throw new Error(error);
       console.log(response.body);
     });
   },
 
-  removeAllPanel: function(deviceId) {
+  removeAllPanel: function (deviceId) {
     var options = {
       method: "POST",
-      url:
-        "https://webexapis.com/v1/xapi/command/UserInterface.Extensions.Clear",
+      url: "https://webexapis.com/v1/xapi/command/UserInterface.Extensions.Clear",
       headers: {
         Authorization: "Bearer " + process.env.BOT_TOKEN,
         "Content-Type": "application/json"
@@ -137,7 +175,7 @@ module.exports = {
         deviceId: deviceId
       })
     };
-    request(options, function(error, response) {
+    request(options, function (error, response) {
       if (error) throw new Error(error);
       console.log(response.body);
     });
@@ -147,7 +185,7 @@ module.exports = {
    * Return all the macro installed on this device
    * @param {string} deviceId The ID of the device
    */
-  getAllMacroFromDevice: function(deviceId) {
+  getAllMacroFromDevice: function (deviceId) {
     return new Promise(resolve => {
       var options = {
         method: "POST",
@@ -163,9 +201,37 @@ module.exports = {
           deviceId: deviceId
         })
       };
-      request(options, function(error, response) {
+      request(options, function (error, response) {
         if (error) throw new Error(error);
         resolve(JSON.parse(response.body).result.Macro);
+      });
+    });
+  },
+
+  restoreBackup: function (deviceId, checksum, filename) {
+    return new Promise(resolve => {
+      var options = {
+        'method': 'POST',
+        'url': 'https://webexapis.com/v1/xapi/command/Provisioning.Service.Fetch',
+        'headers': {
+          'Authorization': "Bearer " + process.env.BOT_TOKEN,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          "deviceId": deviceId,
+          "arguments": {
+            "Checksum": checksum,
+            "ChecksumType": "SHA512",
+            "Mode": "Add",
+            "Origin": "Provisioning",
+            "URL": "http://websrv2.ciscofrance.com:15139/uploads/backups/" + filename
+          }
+        })
+
+      };
+      request(options, function (error, response) {
+        if (error) throw new Error(error);
+        resolve(JSON.parse(response.body));
       });
     });
   }

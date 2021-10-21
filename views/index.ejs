@@ -43,9 +43,21 @@
   </header>
 
   <div class="main-container">
+    <div style="margin: 1%; display: flex; justify-content: center;">
+      <div class="md-button__container--small">
+        <button
+          id="resetShowroomBtn"
+          class="md-button md-button--circle md-button--56 md-activity md-activity__meetings"
+          alt="meetings" type="button" aria-label="meetings">
+          <span class="md-button__children">
+            <i class="icon icon-reset_24"></i>
+          </span>
+        </button>
+        <div class="md-button__label">Restore Showroom to default</div>
+      </div>
+    </div>
     <div class="outer-wrap">
       <div class="content">
-
         <main class="main-area">
           <section class="cards">
             <article class="card">
@@ -71,6 +83,13 @@
                       <label class="md-radio__label" for="basicRadio2">
                         <span>UI File</span>
                       </label>
+                    </div>
+                    <div class="md-input-container md-radio">
+                      <input type="radio" class="md-input md-radio__input" id="basicRadio3" name="basicRadio"
+                        value="backup">
+                      <label class="md-radio__label" for="basicRadio3">
+                        <span>Backup package (.zip)</span>
+                      </label>
                     </div><br>
                     <div class="docs-example docs-example--spacing">
                       <button type='submit' class="md-button md-button--blue">Upload !</button>
@@ -86,11 +105,14 @@
                   <div>
                     <select name="file" id="file">
                       <% for (macro of marcosAvailable) { %>
-                      <option value="./uploads/macros/<%=macro%>"><%=macro%></option>
+                      <option value="./public/uploads/macros/<%=macro%>"><%=macro%></option>
                       <% } %>
 
                       <% for (panel of panelAvailable) { %>
-                      <option value="./uploads/panels/<%=panel%>"><%=panel%></option>
+                      <option value="./public/uploads/panels/<%=panel%>"><%=panel%></option>
+                      <% } %>
+                      <% for (backup of backupsAvailable) { %>
+                        <option value="./public/uploads/backups/<%=backup%>"><%=backup%></option>
                       <% } %>
                     </select>
                   </div><br><br>
@@ -213,11 +235,13 @@
                   <div class="md-input-container md-checkbox" style="display: flex;
                     flex-direction: row;
                     justify-content: space-between;">
-                    <input name="allMacro" id="all-macro-checkbox" type="checkbox" class="md-input md-checkbox__input check-remove-type" checked>
+                    <input name="allMacro" id="all-macro-checkbox" type="checkbox"
+                      class="md-input md-checkbox__input check-remove-type" checked>
                     <label class="md-checkbox__label" for="all-macro-checkbox">
                       <span>Remove All Macro</span>
                     </label>
-                    <input name="allPanel" id="all-panel-checkbox" type="checkbox" class="md-input md-checkbox__input check-remove-type" checked>
+                    <input name="allPanel" id="all-panel-checkbox" type="checkbox"
+                      class="md-input md-checkbox__input check-remove-type" checked>
                     <label class="md-checkbox__label" for="all-panel-checkbox">
                       <span>Remove All Panel</span>
                     </label>
@@ -308,10 +332,14 @@
         </thead>
         <% for (device of devices) { %>
         <tr>
+          <% if(device.connectionStatus === "disconnected"){ %>
+          <td><a href="javascript:void(0)" style="pointer-events: none; color: grey;"><%= device.displayName %></a></td>
+          <% } else { %>
           <td><a href="/edit-device/<%=device.id%>"><%= device.displayName %></a></td>
+          <% } %>
           <td>
             <% if(device.connectionStatus === "disconnected"){ %>
-            <p class="status status-unpaid"><%= device.connectionStatus %></p>
+            <p class="status status-unpaid"><%= device.connectionStatus %> </p>
             <% } else { %>
             <p class="status <%= device.connectionStatus === 'connected_with_issues'?'status-pending':'status-paid' %>">
               <%= device.connectionStatus %></p>
@@ -339,6 +367,46 @@
         </button>
       </div>
     </div>
+  </div>
+
+  <div id="confirmation-modal" class="md-modal__backdrop fade in" style="display: none;">
+    <div role="dialog" id="react-aria-modal-dialog" class="md-modal md-modal--dialog in" aria-labelledby="modalDialog"
+      tabindex="-1">
+      <div class="md-modal__content">
+        <div class="md-modal__flex-container">
+          <div class="md-modal__header">
+            <span class="md-modal__title">Warning <i class="icon icon-warning_20"></i></span>
+            <button class="md-close md-modal__close"></button>
+          </div>
+          <% if (backupedDevices.length > 0) { %>
+          <div class="md-modal__body"><span>The following devices will be affected :
+            <ul>
+              <% for (device of backupedDevices) { %>
+              <li><%= device.name %></li>
+              <% } %>
+            </ul>  
+          </span></div>
+            <% } else { %>
+              <div class="md-modal__body"><span>No device has been backed up...</span></div>
+            <% } %>
+          
+          <div class="md-modal__footer">
+            <button id="close-confirmation" class="md-button md-button--36 md-button--default" alt="Close Modal"
+              type="button" aria-label="Close Modal" tabindex="0">
+              <span class="md-button__children" style="opacity: 1;">Cancel</span>
+            </button>
+            <% if (backupedDevices.length > 0) { %>
+            <button id="reset-modal-btn" class="md-button md-button--36 md-button--red" alt="Submit Form" type="button"
+              aria-label="Submit Form" tabindex="0">
+              <span class="md-button__children" style="opacity: 1;">Confirm</span>
+            </button>
+            <% } %>
+          </div>
+          
+        </div>
+      </div>
+    </div>
+  </div>
 
 </body>
 
@@ -359,9 +427,9 @@
       $("#notification-title").html(title);
       $("#notification-msg").html(msg);
       $("#notification").show('slow');
-      if(!(timer === null)){
-          clearTimeout(timer);
-          timeout = null;
+      if (!(timer === null)) {
+        clearTimeout(timer);
+        timeout = null;
       }
       timer = setTimeout(() => {
         $("#notification").hide('slow');
@@ -369,10 +437,9 @@
     }
 
     $("#remove-notification").click(function () {
-      if($("#notification").find(">:first-child").hasClass("md-alert--success")){
+      if ($("#notification").find(">:first-child").hasClass("md-alert--success")) {
         $("#notification").find(">:first-child").removeClass("md-alert--success");
-      }
-      else{
+      } else {
         $("#notification").find(">:first-child").removeClass("md-alert--error");
       }
       $("#notification").hide();
@@ -384,8 +451,8 @@
     }, 2000);
     setTimeout(() => {
       $(".scroll-div").animate({
-      scrollTop: -1000
-    }, 2000);
+        scrollTop: -1000
+      }, 2000);
     }, 500);
 
     //Switch table (panel or macro)
@@ -394,6 +461,30 @@
       $("#macroTable").toggle();
     });
     //form submit handler
+    $('#uploadForm').submit(function (e) {
+      e.preventDefault();
+      console.log("ok");
+      $.ajax({
+        url: '/upload',
+        type: 'POST',
+        data: new FormData(this),
+        processData: false,
+        contentType: false
+      }).done(
+        function (response) {
+          console.log("ok2");
+          if (response.code === "400") {
+            showNotification("md-alert--error", "Error", response.msg);
+          }
+          else{
+            location.reload();
+          }
+        }
+      );
+    });
+
+
+
     $('#sendFileToDevice').submit(function (e) {
       //check atleat 1 checkbox is checked
       if (!$('.check').is(':checked')) {
@@ -408,31 +499,30 @@
         e.preventDefault();
       }
 
-      if($('.check-device').is(':checked') && $('.check').is(':checked')){
+      if ($('.check-device').is(':checked') && $('.check').is(':checked')) {
         e.preventDefault(); // avoid to execute the actual submit of the form.
         var form = $(this);
         var url = form.attr('action');
         $.ajax({
-                  type: "POST",
-                  url: url,
-                  dataType: 'json',
-                  data: form.serialize() // serializes the form's elements.
-            })
-        .done(
-        function(response) {
-          if(response.code === "204"){
-              showNotification("md-alert--success", "Success", "the macro has been sent successfully")
-          }
-          else if(response.code === "500"){
-              showNotification("md-alert--error", "Error", "error : "+ response.msg)
-          }
-          }
-        ); 
+            type: "POST",
+            url: url,
+            dataType: 'json',
+            data: form.serialize() // serializes the form's elements.
+          })
+          .done(
+            function (response) {
+              if (response.code === "204") {
+                showNotification("md-alert--success", "Success", "the macro has been sent successfully")
+              } else if (response.code === "500") {
+                showNotification("md-alert--error", "Error", "error : " + response.msg)
+              }
+            }
+          );
       }
     });
 
     $('#removeAllFileFromDevice').submit(function (e) {
-      if(!$('.check-remove-type').is(':checked')) {
+      if (!$('.check-remove-type').is(':checked')) {
         alert("Choose at least one remove type.");
         //prevent the default form submit if it is not checked
         e.preventDefault();
@@ -446,35 +536,34 @@
         return
       }
       e.preventDefault();
-      if(confirm('Are you sure you want to remove these files')){
+      if (confirm('Are you sure you want to remove these files')) {
         var form = $(this);
         var url = form.attr('action');
         $.ajax({
-                  type: "POST",
-                  url: url,
-                  dataType: 'json',
-                  data: form.serialize() // serializes the form's elements.
-            })
-        .done(
-        function(response) {
-          if(response.code === "204"){
-              showNotification("md-alert--success", "Success", "Files has been successfully removed")
-          }
-          else if(response.code === "500"){
-              showNotification("md-alert--error", "Error", "error : "+ response.msg)
-          }
-          }
-        ); 
+            type: "POST",
+            url: url,
+            dataType: 'json',
+            data: form.serialize() // serializes the form's elements.
+          })
+          .done(
+            function (response) {
+              if (response.code === "204") {
+                showNotification("md-alert--success", "Success", "Files has been successfully removed")
+              } else if (response.code === "500") {
+                showNotification("md-alert--error", "Error", "error : " + response.msg)
+              }
+            }
+          );
       }
     });
 
     $('#removeFileFromServer').submit(function (e) {
-      if(!confirm('Are you sure you want to remove this file')){
+      if (!confirm('Are you sure you want to remove this file')) {
         e.preventDefault();
         return
       }
     });
-    
+
 
     //To enable or disable macro on installation
     $('.id-check').change(function () {
@@ -491,6 +580,31 @@
         var newValue = JSON.stringify(tmpValue);
         $('#' + inputId).val(newValue);
       }
+    });
+
+
+    $(document).on("click", '#resetShowroomBtn', function (e) {
+      e.preventDefault(); // avoid to execute the actual submit of the form.
+      $("#confirmation-modal").show();
+      $("#reset-modal-btn").on("click", function () {
+        $.ajax({
+            type: "GET",
+            url: "/restoreShowroomToDefault",
+          })
+          .done(
+            function (response) {
+              if (response.code === "204") {
+                showNotification("md-alert--success", "Success", "Showroom restored to default state")
+              } else if (response.code === "500") {
+                showNotification("md-alert--error", "Error", "error : " + response.msg)
+              }
+            }
+          );
+        $("#confirmation-modal").hide();
+      });
+      $("#close-confirmation").on("click", function () {
+        $("#confirmation-modal").hide();
+      });
     });
   });
 </script>

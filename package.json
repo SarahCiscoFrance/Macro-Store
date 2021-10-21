@@ -9,6 +9,7 @@
     "@momentum-ui/core": "^19.15.3",
     "@momentum-ui/icons": "^8.20.0",
     "cookie-parser": "~1.4.4",
+    "crypto": "^1.0.1",
     "debug": "~2.6.9",
     "dotenv": "^10.0.0",
     "ejs": "~2.6.1",

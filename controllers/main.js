@@ -1,6 +1,8 @@
 const fs = require("fs");
+var crypto = require('crypto');
 const xAPIUtils = require("../xAPICloud/utils");
 const mongoose = require("mongoose");
+const Device = require('../models/device');
 
 mongoose.connect("mongodb://localhost:27017/macro-store", {
   useNewUrlParser: true
@@ -10,12 +12,15 @@ exports.getIndex = async (req, res, next) => {
   res.render("index", {
     title: "Macro Store",
     devices: await xAPIUtils.getDevices(),
-    marcosAvailable: await getFilesName("./uploads/macros/"),
-    panelAvailable: await getFilesName("./uploads/panels/")
+    backupedDevices: await getBackupedDevices(),
+    marcosAvailable: await getFilesName("./public/uploads/macros/"),
+    panelAvailable: await getFilesName("./public/uploads/panels/"),
+    backupsAvailable: await getFilesName("./public/uploads/backups/"),
   });
 };
 
 exports.uploadFile = async (req, res, next) => {
+  let fileIsValid = false;
   let sampleFile;
   let uploadPath;
   let fileNames;
@@ -30,36 +35,54 @@ exports.uploadFile = async (req, res, next) => {
 
   sampleFile = req.files.sampleFile;
 
-  if (fileType === "macro") {
-    fileNames = await getFilesName("./uploads/macros/");
+  if (fileType === "macro" && sampleFile.name.includes(".js")) {
+    fileIsValid = true;
+    fileNames = await getFilesName("./public/uploads/macros/");
     if (fileNames.includes(sampleFile.name)) {
       let new_name = sampleFile.name;
       new_name = new_name.replace(".js", "");
       new_name = new_name + "_" + new Date().toJSON().slice(0, 10) + ".js";
-      uploadPath = "./uploads/macros/" + new_name;
+      uploadPath = "./public/uploads/macros/" + new_name;
     } else {
-      uploadPath = "./uploads/macros/" + sampleFile.name;
+      uploadPath = "./public/uploads/macros/" + sampleFile.name;
     }
-  } else if (fileType === "panel") {
-    fileNames = await getFilesName("./uploads/panels");
+  } else if (fileType === "panel" && sampleFile.name.includes(".xml")) {
+    fileIsValid = true;
+    fileNames = await getFilesName("./public/uploads/panels");
     if (fileNames.includes(sampleFile.name)) {
       let new_name = sampleFile.name;
       new_name = new_name.replace(".js", "");
       new_name = new_name + "_" + new Date().toJSON().slice(0, 10) + ".js";
-      uploadPath = "./uploads/panels/" + new_name;
+      uploadPath = "./public/uploads/panels/" + new_name;
     } else {
-      uploadPath = "./uploads/panels/" + sampleFile.name;
+      uploadPath = "./public/uploads/panels/" + sampleFile.name;
+    }
+  } else if (fileType === "backup" && sampleFile.name.includes(".zip")) {
+    fileIsValid = true;
+    fileNames = await getFilesName("./public/uploads/backups");
+    if (fileNames.includes(sampleFile.name)) {
+      let new_name = sampleFile.name;
+      new_name = new_name.replace(".zip", "");
+      new_name = new_name + "_" + new Date().toJSON().slice(0, 10) + ".zip";
+      uploadPath = "./public/uploads/backups/" + new_name;
+    } else {
+      uploadPath = "./public/uploads/backups/" + sampleFile.name;
     }
   } else {
-    res.status(400).send("Radio button should be equal to macro or panel.");
+    res.json({
+      code: "400",
+      msg: "Check format : macro (.js) or panel (.xml) or backup (.zip)."
+    });
   }
 
-  sampleFile.mv(uploadPath, function(err) {
-    if (err) {
-      return res.status(500).send(err);
-    }
-    res.redirect("/");
-  });
+  if (fileIsValid) {
+    sampleFile.mv(uploadPath, function (err) {
+      if (err) {
+        return res.status(500).send(err);
+      }
+      res.redirect("/");
+    });
+  }
 };
 
 exports.saveFile = async (req, res, next) => {
@@ -74,8 +97,7 @@ exports.saveFile = async (req, res, next) => {
         macros.forEach(macro => {
           macro = JSON.parse(macro);
           const macroText = fs.readFileSync(
-            "./uploads/macros/" + macro.macroName,
-            {
+            "./public/uploads/macros/" + macro.macroName, {
               encoding: "utf-8"
             }
           );
@@ -90,9 +112,10 @@ exports.saveFile = async (req, res, next) => {
             )
             .then(() => {
               if (macro.activationOnInstall === "True") {
-                xAPIUtils.activateMacro(
+                xAPIUtils.setMacroActivation(
                   device,
-                  macro.macroName.replace(".js", "")
+                  macro.macroName.replace(".js", ""),
+                  true
                 );
               }
             });
@@ -100,7 +123,7 @@ exports.saveFile = async (req, res, next) => {
       }
       if (panels.length > 0 && !panels.includes(undefined)) {
         panels.forEach(panel => {
-          const panelContent = fs.readFileSync("./uploads/panels/" + panel, {
+          const panelContent = fs.readFileSync("./public/uploads/panels/" + panel, {
             encoding: "utf-8"
           });
 
@@ -112,10 +135,15 @@ exports.saveFile = async (req, res, next) => {
         });
       }
     });
-    res.json({ code: "204" });
+    res.json({
+      code: "204"
+    });
   } catch (error) {
     console.error(error);
-    res.json({ code: "500", msg: error.message });
+    res.json({
+      code: "500",
+      msg: error.message
+    });
   }
 
   //res.status(204).send();
@@ -131,6 +159,24 @@ exports.deleteFile = (req, res, next) => {
     console.error(err);
     res.sendStatus(500);
   }
+};
+
+exports.deleteMacroOnDevice = (req, res, next) => {
+  const macroName = req.body.macroName;
+  const deviceId = req.body.deviceId;
+  try {
+    xAPIUtils.removeMacro(deviceId, macroName);
+    res.json({
+      code: "204"
+    });
+  } catch (error) {
+    console.error(error);
+    res.json({
+      code: "500",
+      msg: error.message
+    });
+  }
+
 };
 
 exports.removeAllFile = (req, res, next) => {
@@ -149,10 +195,34 @@ exports.removeAllFile = (req, res, next) => {
         xAPIUtils.removeAllPanel(deviceId);
       });
     }
-    res.json({ code: "204" });
+    res.json({
+      code: "204"
+    });
   } catch (error) {
     console.error(error);
-    res.json({ code: "500", msg: error.message });
+    res.json({
+      code: "500",
+      msg: error.message
+    });
+  }
+};
+
+exports.changeMacroActivationStatus = (req, res, next) => {
+  const deviceId = req.body.deviceId;
+  const macroName = req.body.macroName;
+  const isMacroActive = req.body.isMacroActive === 'true';
+  console.log(deviceId, macroName, isMacroActive);
+  try {
+    xAPIUtils.setMacroActivation(deviceId, macroName, isMacroActive);
+    res.json({
+      code: "204"
+    });
+  } catch (error) {
+    console.error(error);
+    res.json({
+      code: "500",
+      msg: error.message
+    });
   }
 };
 
@@ -160,10 +230,145 @@ exports.getDevice = async (req, res, next) => {
   const deviceId = req.params.deviceId;
   res.render("device", {
     title: "Device",
+    deviceDetails: await xAPIUtils.getDeviceDetail(deviceId),
+    deviceLocalDetails: await getDeviceLocalInfo(deviceId),
     macros: await xAPIUtils.getAllMacroFromDevice(deviceId),
-    marcosAvailable: await getFilesName("./uploads/macros/"),
-    panelAvailable: await getFilesName("./uploads/panels/")
+    marcosAvailable: await getFilesName("./public/uploads/macros/"),
+    panelAvailable: await getFilesName("./public/uploads/panels/"),
+    backupsAvailable: await getFilesName("./public/uploads/backups/"),
   });
+};
+
+exports.linkBackupToDevice = async (req, res, next) => {
+  const deviceId = req.body.deviceId;
+  const deviceName = req.body.deviceName;
+  const deviceMac = req.body.deviceMac;
+  const deviceIp = req.body.deviceIp;
+  const backupFileName = req.body.backupFileName;
+
+  // var device = new Device({
+  //   name: deviceName,
+  //   mac: deviceMac,
+  //   ip: deviceIp,
+  //   webexId: deviceId,
+  //   backupFileName: backupFileName,
+  //   hasBackupFile: true
+  // });
+  try {
+    fs.readFile('./public/uploads/backups/' + backupFileName, function (err, data) {
+      var checksum = generateChecksum(data, "sha512");
+      Device.updateOne({
+        mac: deviceMac
+      }, {
+        name: deviceName,
+        mac: deviceMac,
+        ip: deviceIp,
+        webexId: deviceId,
+        backupFileName: backupFileName,
+        hasBackupFile: true,
+        fileChecksum: checksum
+      }, {
+        upsert: true
+      }, function (err, save) {
+        if (err) {
+          console.error(err)
+          res.json({
+            code: "500",
+            msg: err.message
+          });
+        } else {
+          console.log("Backup linked to device!");
+          res.json({
+            code: "204"
+          });
+        }
+      });
+    });
+  } catch (error) {
+    console.error(error)
+    res.json({
+      code: "500",
+      msg: error.message
+    });
+  }
+
+
+  // //Save the created device in db
+  // device.save(function (err, save) {
+  //   if (err) {
+  //     console.error(err)
+  //     res.json({
+  //       code: "500",
+  //       msg: error.message
+  //     });
+  //   } else {
+  //     console.log("device added in data base!");
+  //     res.json({
+  //       code: "204"
+  //     });
+  //   }
+  // });
+
+};
+
+
+exports.unlinkBackupFromDevice = async (req, res, next) => {
+  const deviceId = req.body.deviceId;
+  const deviceName = req.body.deviceName;
+  const deviceMac = req.body.deviceMac;
+  const deviceIp = req.body.deviceIp;
+  const backupFileName = req.body.backupFileName;
+
+  Device.findOneAndUpdate({
+    mac: deviceMac
+  }, {
+    $set: {
+      hasBackupFile: false,
+      backupFileName: null
+    }
+  }, {
+    new: true
+  }, (error, doc) => {
+    if (error) {
+      console.log("Something wrong when updating data!");
+      res.json({
+        code: "500",
+        msg: error.message
+      });
+    }
+    console.log(doc);
+    res.json({
+      code: "204"
+    });
+  });
+
+};
+
+
+exports.restoreShowroomToDefault = (req, res, next) => {
+
+  getBackupedDevices().then(devices => {
+    var promises = [];
+    devices.forEach(device => {
+      promises.push(xAPIUtils.restoreBackup(device.webexId, device.fileChecksum, device.backupFileName))
+    });
+    
+    Promise.all(promises).then((values) => {
+      console.log(values);
+      res.json({
+        code: "204"
+      });
+    });
+  });
+
+  // fs.readFile('./public/uploads/backups/backup.zip', function(err, data) {
+  //   var checksum = generateChecksum(data, "sha512");
+  //   console.log(checksum);
+  //   console.log("ok");
+  //   res.json({
+  //     code: "204"
+  //   });
+  // });
 };
 
 /**
@@ -180,4 +385,39 @@ function getFilesName(pathFolder) {
       resolve(filesName);
     });
   });
+}
+
+function getDeviceLocalInfo(deviceId) {
+  return new Promise(resolve => {
+    Device.findOne({
+      webexId: deviceId
+    }, function (err, doc) {
+      if (err) {
+        console.log(err);
+      } else {
+        resolve(doc);
+      }
+    });
+  });
+}
+
+function getBackupedDevices() {
+  return new Promise(resolve => {
+    Device.find({
+      hasBackupFile: true
+    }, function (err, docs) {
+      if (err) {
+        console.log(err);
+      } else {
+        resolve(docs);
+      }
+    });
+  });
+}
+
+function generateChecksum(str, algorithm, encoding) {
+  return crypto
+    .createHash(algorithm || 'md5')
+    .update(str, 'utf8')
+    .digest(encoding || 'hex');
 }
