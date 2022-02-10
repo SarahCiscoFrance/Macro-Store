@@ -229,8 +229,8 @@ module.exports = {
             "ChecksumType": "SHA512",
             "Mode": "Add",
             "Origin": "Provisioning",
-            // "URL": `http://websrv2.ciscofrance.com:15139/uploads/${templateFolderName ? `templates/${templateFolderName}/${filename}` : `backups/${filename}` }`
-            "URL": `http://1464-80-215-246-177.ngrok.io/uploads/${templateFolderName ? `templates/${templateFolderName}/${filename}` : `backups/${filename}` }`
+            "URL": `http://websrv2.ciscofrance.com:15139/uploads/${templateFolderName ? `templates/${templateFolderName}/${filename}` : `backups/${filename}` }`
+            // "URL": `http://1464-80-215-246-177.ngrok.io/uploads/${templateFolderName ? `templates/${templateFolderName}/${filename}` : `backups/${filename}` }`
           }
         })
 
