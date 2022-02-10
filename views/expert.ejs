@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title><%= title %></title>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <!-- <script src="https://kit.fontawesome.com/0a2b8cf434.js" crossorigin="anonymous"></script> -->
+  <link rel="icon" href="/images/favicon.svg">
+  <link rel="stylesheet" href="/stylesheets/momentum-ui-icons.min.css">
+  <link rel="stylesheet" href="/stylesheets/momentum-ui.min.css">
+  <link rel='stylesheet' href='/stylesheets/style.css' />
+  <link rel='stylesheet' href='/stylesheets/card-style.css' />
+  <link rel='stylesheet' href='/stylesheets/table.css' />
+</head>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+<body>
+  <%- include('./components/top-bar.ejs') %>
+  <%- include('./components/loader.ejs') %>
+
+  <div class="main-container">
+    <div style="margin: 1%; display: flex; justify-content: center;">
+      <div class="md-button__container--small">
+        <button
+          id="resetShowroomBtn"
+          class="md-button md-button--circle md-button--56 md-activity md-activity__meetings"
+          alt="meetings" type="button" aria-label="meetings">
+          <span class="md-button__children">
+            <i class="icon icon-reset_24"></i>
+          </span>
+        </button>
+        <div class="md-button__label">Restore Showroom to default</div>
+      </div>
+    </div>
+    <div class="outer-wrap">
+      <div class="content">
+        <main class="main-area">
+          <section class="cards">
+            <article class="card">
+              <div class="card-content">
+                <form ref='uploadForm' id='uploadForm' action='/upload' method='post' encType="multipart/form-data">
+                  <h2>Upload a file to Websrv2 <i class="icon icon-cloud-upload_24"></i></h2>
+                  <hr><br><br>
+                  <div style="
+                display: flex;
+                flex-direction: column;
+                align-items: baseline;">
+                    <input type="file" name="sampleFile" required /><br>
+                    <div class="md-input-container md-radio">
+                      <input type="radio" class="md-input md-radio__input" id="basicRadio1" name="basicRadio"
+                        value="macro" checked>
+                      <label class="md-radio__label" for="basicRadio1">
+                        <span>Macro</span>
+                      </label>
+                    </div>
+                    <div class="md-input-container md-radio">
+                      <input type="radio" class="md-input md-radio__input" id="basicRadio2" name="basicRadio"
+                        value="panel">
+                      <label class="md-radio__label" for="basicRadio2">
+                        <span>UI File</span>
+                      </label>
+                    </div>
+                    <div class="md-input-container md-radio">
+                      <input type="radio" class="md-input md-radio__input" id="basicRadio3" name="basicRadio"
+                        value="backup">
+                      <label class="md-radio__label" for="basicRadio3">
+                        <span>Backup package (.zip)</span>
+                      </label>
+                    </div><br>
+                    <div class="docs-example docs-example--spacing">
+                      <button type='submit' class="md-button md-button--blue">Upload !</button>
+                    </div>
+                  </div>
+
+                </form>
+                <br><br>
+                <form id="removeFileFromServer" action="/deleteFile" method="POST">
+                  <h2>Remove a File from Websrv2 <i class="icon icon-file-excel_28"></i></h2>
+                  <hr>
+                  <label><b>Select file :</b></label><br><br>
+                  <div>
+                    <select name="file" id="file">
+                      <% for (macro of marcosAvailable) { %>
+                      <option value="./public/uploads/macros/<%=macro%>"><%=macro%></option>
+                      <% } %>
+
+                      <% for (panel of panelAvailable) { %>
+                      <option value="./public/uploads/panels/<%=panel%>"><%=panel%></option>
+                      <% } %>
+                      <% for (backup of backupsAvailable) { %>
+                        <option value="./public/uploads/backups/<%=backup%>"><%=backup%></option>
+                      <% } %>
+                    </select>
+                  </div><br><br>
+                  <div class="docs-example docs-example--spacing">
+                    <button type='submit' class="md-button md-button--red">Delete !</button>
+                  </div>
+                </form>
+              </div><!-- .card-content -->
+            </article><!-- .card -->
+
+
+
+            <article class="card">
+              <div class="card-content">
+                <form id="sendFileToDevice" action="/saveFile" method="POST">
+                  <h2>Send files to devices <i class="icon icon-send_24"></i></h2>
+                  <hr>
+                  <div style="display: flex; align-items: center;">
+                    <button id="switchTable" type="button"
+                      class="md-button md-button--circle md-button--blue icon icon-exchange_16"></button>
+                    <label><b>&nbsp;Select files :</b></label>
+                  </div><br>
+                  <table id="macroTable" style="text-align: justify; white-space: nowrap;">
+                    <caption>macros</caption>
+                    <% var cpt = 0; %>
+                    <% for (macro of marcosAvailable) { %>
+                    <tr>
+                      <th>
+                        <div class="md-input-container md-checkbox">
+                          <input id="macro<%=cpt%>" type="checkbox" class="md-input md-checkbox__input check"
+                            name="macroSelected" value='{"macroName":"<%=macro%>","activationOnInstall":"False"}'>
+                          <label class="md-checkbox__label" for="macro<%=cpt%>">
+                            <span><%= macro %></span>
+                          </label>
+                        </div><br>
+                      </th>
+                      <th>
+                        <div class="md-input-container md-toggle-switch ">
+                          <input class="md-input md-toggle-switch__input id-check" type="checkbox" aria-checked="false"
+                            name="" id="testToggleSwitch<%=cpt%>" data-associate-input-id="macro<%=cpt%>" value="" />
+                          <label class="md-toggle-switch__label" for="testToggleSwitch<%=cpt%>">
+                            <span class="md-toggle-switch__label__container"></span>
+                            <span class="md-toggle-switch__label__text">Enable/Disable</span>
+                          </label>
+                        </div>
+                      </th>
+                    </tr>
+                    <% cpt++ %>
+                    <% } %>
+                  </table>
+
+                  <table id="panelTable" style="text-align: justify; white-space: nowrap;" hidden>
+                    <caption>panels</caption>
+                    <% var cpt = 0; %>
+                    <% for (panel of panelAvailable) { %>
+                    <tr>
+                      <th>
+                        <div class="md-input-container md-checkbox">
+                          <input id="panel<%=cpt%>" type="checkbox" class="md-input md-checkbox__input check"
+                            name="panelSelected" value='<%=panel%>'>
+                          <label class="md-checkbox__label" for="panel<%=cpt%>">
+                            <span><%= panel %></span>
+                          </label>
+                        </div><br>
+                      </th>
+                    </tr>
+                    <% cpt++ %>
+                    <% } %>
+                  </table>
+                  <br>
+                  <label for="deviceId"><b>Select Device : </b></label><br><br>
+                  <div class="scroll-div" style="overflow: scroll;height: 17rem;">
+                    <% var cpt2 = 0; %>
+                    <% for (device of devices) { %>
+                    <% if(device.connectionStatus === "disconnected"){ %>
+                    <div class="md-input-container md-checkbox">
+                      <input id="device<%=cpt2%>" type="checkbox" name="deviceSelected" value="<%=device.id%>"
+                        class="md-input md-checkbox__input check-device" disabled>
+                      <label class="md-checkbox__label" for="device<%=cpt2%>">
+                        <span class="space-between"><%= device.displayName %> <span
+                            class="md-badge md-badge--red-pastel"><%= device.connectionStatus %></span></span>
+                      </label><br>
+                    </div>
+                    <% } else if(device.connectionStatus === "connected_with_issues") { %>
+                    <div class="md-input-container md-checkbox">
+                      <input id="device<%=cpt2%>" type="checkbox" name="deviceSelected" value="<%=device.id%>"
+                        class="md-input md-checkbox__input check-device">
+                      <label class="md-checkbox__label" for="device<%=cpt2%>">
+                        <span class="space-between"><%= device.displayName %> <span
+                            class="md-badge md-badge--yellow-pastel"><%= device.connectionStatus %></span></span>
+                      </label><br>
+                    </div>
+                    <% } else { %>
+                    <div class="md-input-container md-checkbox">
+                      <input id="device<%=cpt2%>" type="checkbox" name="deviceSelected" value="<%=device.id%>"
+                        class="md-input md-checkbox__input check-device">
+                      <label class="md-checkbox__label" for="device<%=cpt2%>">
+                        <span class="space-between"><%= device.displayName %> <span
+                            class="md-badge md-badge--green-pastel"><%= device.connectionStatus %></span></span>
+                      </label><br>
+                    </div>
+                    <% } %>
+                    <% cpt2++ %>
+                    <% } %>
+                  </div>
+                  <br>
+                  <div class="docs-example docs-example--spacing">
+                    <button type='submit' class="md-button md-button--blue">Upload !</button>
+                  </div>
+                </form>
+              </div><!-- .card-content -->
+            </article><!-- .card -->
+
+            <article class="card">
+              <div class="card-content">
+                <form id="removeAllFileFromDevice" action="/removeAllFile" method="POST">
+                  <h2>Remove all files from a device <i class="icon icon-delete_24"></i></h2>
+                  <hr>
+
+                  <div class="md-input-container md-checkbox" style="display: flex;
+                    flex-direction: row;
+                    justify-content: space-between;">
+                    <input name="allMacro" id="all-macro-checkbox" type="checkbox"
+                      class="md-input md-checkbox__input check-remove-type" checked>
+                    <label class="md-checkbox__label" for="all-macro-checkbox">
+                      <span>Remove All Macro</span>
+                    </label>
+                    <input name="allPanel" id="all-panel-checkbox" type="checkbox"
+                      class="md-input md-checkbox__input check-remove-type" checked>
+                    <label class="md-checkbox__label" for="all-panel-checkbox">
+                      <span>Remove All Panel</span>
+                    </label>
+                  </div>
+
+                  <hr>
+                  <label><b>Select Device : </b></label><br><br>
+                  <div class="scroll-div" style="overflow: scroll;height: 30rem;">
+                    <% var cpt3 = cpt2; %>
+                    <% for (device of devices) { %>
+                    <% if(device.connectionStatus === "disconnected"){ %>
+                    <div class="md-input-container md-checkbox">
+                      <input id="device<%=cpt3%>" type="checkbox" name="deviceSelected" value="<%=device.id%>"
+                        class="md-input md-checkbox__input check-device-all-macro" disabled>
+                      <label class="md-checkbox__label" for="device<%=cpt3%>">
+                        <span class="space-between"><%= device.displayName %> <span
+                            class="md-badge md-badge--red-pastel"><%= device.connectionStatus %></span></span>
+                      </label><br>
+                    </div>
+                    <% } else if(device.connectionStatus === "connected_with_issues") { %>
+                    <div class="md-input-container md-checkbox">
+                      <input id="device<%=cpt3%>" type="checkbox" name="deviceSelected" value="<%=device.id%>"
+                        class="md-input md-checkbox__input check-device-all-macro">
+                      <label class="md-checkbox__label" for="device<%=cpt3%>">
+                        <span class="space-between"><%= device.displayName %> <span
+                            class="md-badge md-badge--yellow-pastel"><%= device.connectionStatus %></span></span>
+                      </label><br>
+                    </div>
+                    <% } else { %>
+                    <div class="md-input-container md-checkbox">
+                      <input id="device<%=cpt3%>" type="checkbox" name="deviceSelected" value="<%=device.id%>"
+                        class="md-input md-checkbox__input check-device-all-macro">
+                      <label class="md-checkbox__label" for="device<%=cpt3%>">
+                        <span class="space-between"><%= device.displayName %> <span
+                            class="md-badge md-badge--green-pastel"><%= device.connectionStatus %></span></span>
+                      </label><br>
+                    </div>
+                    <% } %>
+                    <% cpt3++ %>
+                    <% } %>
+                  </div>
+                  <br>
+                  <div class="docs-example docs-example--spacing">
+                    <button type='submit' class="md-button md-button--red">Remove All !</button>
+                  </div>
+                </form>
+              </div><!-- .card-content -->
+            </article><!-- .card -->
+
+            <!--<article class="card">
+            <a href="#">
+              <picture class="thumbnail">
+                <img src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/222641/the-sea.jpg">
+              </picture>
+              <div class="card-content">
+                <h2>Headline goes here</h2>
+                <p>Here's to alcohol, the cause of — and solution to — all life's problems. How is education supposed to
+                  make me feel smarter?</p>
+                <p>Besides, every time I learn something new, it pushes some old stuff out of my brain. Remember when I
+                  took that home winemaking course, and I forgot how to drive?</p>
+              </div>-->
+            <!-- .card-content -->
+            <!-- </a>
+          </article>-->
+            <!-- .card -->
+
+          </section><!-- .cards -->
+        </main>
+      </div><!-- .content -->
+    </div><!-- .outer-wrap -->
+    <!-- <div class="md-alert-banner md-alert-banner--error">
+    <div class="md-alert-banner__text">Error Alert Banner</div>
+    <div class="md-alert-banner__close" tabindex="0" role="button" aria-label="Close">
+      <i class="icon icon-cancel_16"></i>
+    </div>
+  </div> -->
+
+    <div>
+      <!--<h2>Edit Device <i class="icon icon-edit_24"></i></h2><br>-->
+      <h2>Device List</h2><br>
+      <table>
+        <thead>
+          <tr>
+            <th>NAME</th>
+            <th style="text-align: center;">Status</th>
+            <th style="text-align: center;">Set current config as default</th>
+          </tr>
+        </thead>
+        <% for (device of devices) { %>
+        <tr>
+          <% if(device.connectionStatus === "disconnected"){ %>
+          <td><a href="javascript:void(0)" style="pointer-events: none; color: grey;"><%= device.displayName %></a></td>
+          <% } else { %>
+          <td><a href="/edit-device/<%=device.id%>"><%= device.displayName %></a></td>
+          <% } %>
+          <td>
+            <% if(device.connectionStatus === "disconnected"){ %>
+            <p class="status status-unpaid"><%= device.connectionStatus %> </p>
+            <% } else { %>
+            <p class="status <%= device.connectionStatus === 'connected_with_issues'?'status-pending':'status-paid' %>">
+              <%= device.connectionStatus %></p>
+            <% } %>
+          </td>
+          <td style="text-align: center;">  
+            <form class="setCurrentConfiAsBackup" action="/setCurrentConfiAsBackup" method="POST">
+              <input type="text" name="deviceId" id="deviceId" value="<%=device.id%>" hidden>
+              <input type="text" name="deviceIp" id="deviceIp" value="<%=device.ip%>" hidden>
+              <input type="text" name="deviceName" id="deviceName" value="<%=device.displayName%>" hidden>
+              <input type="text" name="deviceMac" id="deviceMac" value="<%=device.mac%>" hidden>
+              <button
+              class="md-button md-button--circle md-button--56 md-activity md-activity__tasks"
+              alt="tasks" type="submit" aria-label="tasks" style="width: 2rem; height: 2rem;">
+                <span class="md-button__children">
+                  <i class="icon icon-download-active_20"></i>
+                </span>
+              </button>
+            </form>
+          </td>
+        </tr>
+        <% } %>
+        </tr>
+
+      </table>
+    </div>
+  </div>
+  
+  <div id="notification" class="notification" hidden>
+    <div class="md-alert md-alert--success">
+      <div class="md-alert__icon"></div>
+      <div class="md-alert__content">
+        <div id="notification-title" class="md-alert__title">Title goes here</div>
+        <div id="notification-msg" class="md-alert__message">
+          Success text here. Lorem ipsum dolor sit amet, consectetur.
+        </div>
+      </div>
+      <div class="md-alert__button">
+        <button id="remove-notification" type="button" class="md-button md-button--circle md-button--large">
+          <span class="md-button__children icon icon-cancel_14"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="confirmation-modal" class="md-modal__backdrop fade in" style="display: none;">
+    <div role="dialog" id="react-aria-modal-dialog" class="md-modal md-modal--dialog in" aria-labelledby="modalDialog"
+      tabindex="-1">
+      <div class="md-modal__content">
+        <div class="md-modal__flex-container">
+          <div class="md-modal__header">
+            <span class="md-modal__title">Warning <i class="icon icon-warning_20"></i></span>
+            <button class="md-close md-modal__close"></button>
+          </div>
+          <% if (backupedDevices.length > 0) { %>
+          <div class="md-modal__body"><span>The following devices will be affected :
+            <ul>
+              <% for (device of backupedDevices) { %>
+              <li><%= device.name %></li>
+              <% } %>
+            </ul>  
+          </span></div>
+            <% } else { %>
+              <div class="md-modal__body"><span>No device has been backed up...</span></div>
+            <% } %>
+          
+          <div class="md-modal__footer">
+            <button id="close-confirmation" class="md-button md-button--36 md-button--default" alt="Close Modal"
+              type="button" aria-label="Close Modal" tabindex="0">
+              <span class="md-button__children" style="opacity: 1;">Cancel</span>
+            </button>
+            <% if (backupedDevices.length > 0) { %>
+            <button id="reset-modal-btn" class="md-button md-button--36 md-button--red" alt="Submit Form" type="button"
+              aria-label="Submit Form" tabindex="0">
+              <span class="md-button__children" style="opacity: 1;">Confirm</span>
+            </button>
+            <% } %>
+          </div>
+          
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+
+<script>
+  $(document).ready(function () {
+    var timer = null;
+    function showNotification(type, title, msg) {
+      //remove class
+      $("#notification").find(">:first-child").removeClass("md-alert--success");
+      $("#notification").find(">:first-child").removeClass("md-alert--error");
+
+      //remove previous notification
+      $("#notification").hide();
+
+      //add specified class
+      $("#notification").find(">:first-child").addClass(type);
+      $("#notification-title").html(title);
+      $("#notification-msg").html(msg);
+      $("#notification").show('slow');
+      if (!(timer === null)) {
+        clearTimeout(timer);
+        timeout = null;
+      }
+      timer = setTimeout(() => {
+        $("#notification").hide('slow');
+      }, 5000);
+    }
+
+    $("#remove-notification").click(function () {
+      if ($("#notification").find(">:first-child").hasClass("md-alert--success")) {
+        $("#notification").find(">:first-child").removeClass("md-alert--success");
+      } else {
+        $("#notification").find(">:first-child").removeClass("md-alert--error");
+      }
+      $("#notification").hide();
+    });
+
+    $('.scroll-div').scroll();
+    $(".scroll-div").animate({
+      scrollTop: 1000
+    }, 2000);
+    setTimeout(() => {
+      $(".scroll-div").animate({
+        scrollTop: -1000
+      }, 2000);
+    }, 500);
+
+    //Switch table (panel or macro)
+    $("#switchTable").click(function () {
+      $("#panelTable").toggle();
+      $("#macroTable").toggle();
+    });
+    //form submit handler
+    $('#uploadForm').submit(function (e) {
+      e.preventDefault();
+      $.ajax({
+        url: '/upload',
+        type: 'POST',
+        data: new FormData(this),
+        processData: false,
+        contentType: false
+      }).done(
+        function (response) {
+          if (response.code === "400") {
+            showNotification("md-alert--error", "Error", response.msg);
+          }
+          else{
+            location.reload();
+          }
+        }
+      );
+    });
+
+
+
+    $('#sendFileToDevice').submit(function (e) {
+      //check atleat 1 checkbox is checked
+      if (!$('.check').is(':checked')) {
+        alert("Choose at least one file");
+        //prevent the default form submit if it is not checked
+        e.preventDefault();
+      }
+
+      if (!$('.check-device').is(':checked')) {
+        alert("Choose at least one device");
+        //prevent the default form submit if it is not checked
+        e.preventDefault();
+      }
+
+      if ($('.check-device').is(':checked') && $('.check').is(':checked')) {
+        e.preventDefault(); // avoid to execute the actual submit of the form.
+        var form = $(this);
+        var url = form.attr('action');
+        $.ajax({
+            type: "POST",
+            url: url,
+            dataType: 'json',
+            data: form.serialize() // serializes the form's elements.
+          })
+          .done(
+            function (response) {
+              if (response.code === "204") {
+                showNotification("md-alert--success", "Success", "the macro has been sent successfully")
+              } else if (response.code === "500") {
+                showNotification("md-alert--error", "Error", "error : " + response.msg)
+              }
+            }
+          );
+      }
+    });
+
+    $('#removeAllFileFromDevice').submit(function (e) {
+      if (!$('.check-remove-type').is(':checked')) {
+        alert("Choose at least one remove type.");
+        //prevent the default form submit if it is not checked
+        e.preventDefault();
+        return
+      }
+      //check atleat 1 checkbox is checked
+      if (!$('.check-device-all-macro').is(':checked')) {
+        alert("Choose at least one device");
+        //prevent the default form submit if it is not checked
+        e.preventDefault();
+        return
+      }
+      e.preventDefault();
+      if (confirm('Are you sure you want to remove these files')) {
+        var form = $(this);
+        var url = form.attr('action');
+        $.ajax({
+            type: "POST",
+            url: url,
+            dataType: 'json',
+            data: form.serialize() // serializes the form's elements.
+          })
+          .done(
+            function (response) {
+              if (response.code === "204") {
+                showNotification("md-alert--success", "Success", "Files has been successfully removed")
+              } else if (response.code === "500") {
+                showNotification("md-alert--error", "Error", "error : " + response.msg)
+              }
+            }
+          );
+      }
+    });
+
+    $('#removeFileFromServer').submit(function (e) {
+      if (!confirm('Are you sure you want to remove this file')) {
+        e.preventDefault();
+        return
+      }
+    });
+
+
+    //To enable or disable macro on installation
+    $('.id-check').change(function () {
+      var inputId = $(this).data('associate-input-id');
+      var oldValue = $('#' + inputId).val();
+      var tmpValue = JSON.parse(oldValue);
+
+      if ($(this).is(':checked') == false) {
+        tmpValue.activationOnInstall = 'False';
+        var newValue = JSON.stringify(tmpValue);
+        $('#' + inputId).val(newValue);
+      } else {
+        tmpValue.activationOnInstall = 'True';
+        var newValue = JSON.stringify(tmpValue);
+        $('#' + inputId).val(newValue);
+      }
+    });
+
+
+    $(document).on("click", '#resetShowroomBtn', function (e) {
+      e.preventDefault(); // avoid to execute the actual submit of the form.
+      $("#confirmation-modal").show();
+      $("#reset-modal-btn").on("click", function () {
+        $.ajax({
+            type: "GET",
+            url: "/restoreShowroomToDefault",
+          })
+          .done(
+            function (response) {
+              if (response.code === "204") {
+                showNotification("md-alert--success", "Success", "Showroom restored to default state")
+              } else if (response.code === "500") {
+                showNotification("md-alert--error", "Error", "error : " + response.msg)
+              }
+            }
+          );
+        $("#confirmation-modal").hide();
+      });
+      $("#close-confirmation").on("click", function () {
+        $("#confirmation-modal").hide();
+      });
+    });
+
+    $(document).on("submit", '.setCurrentConfiAsBackup', function (e) {
+      e.preventDefault(); // avoid to execute the actual submit of the form.
+      var form = $(this);
+      var url = form.attr('action');
+      $.ajax({
+          type: "POST",
+          url: url,
+          dataType: 'json',
+          data: form.serialize() // serializes the form's elements.
+          })
+          .done(
+            function (response) {
+              if (response.code === "204") {
+                showNotification("md-alert--success", "Success", "The current config of this device is now its default state")
+              } else if (response.code === "500") {
+                showNotification("md-alert--error", "Error", "error : " + response.msg)
+              }
+            }
+          );
+    });
+  });
+</script>
+
+</html>

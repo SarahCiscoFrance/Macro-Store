@@ -1,4 +1,8 @@
 const request = require("request");
+const fs = require("fs");
+const {
+  promisify
+} = require("util");
 
 module.exports = {
   /**
@@ -76,7 +80,6 @@ module.exports = {
    */
   setMacroActivation: function (deviceId, macroName, active) {
     var url = "https://webexapis.com/v1/xapi/command/Macros.Macro." + (active ? "Activate" : "Deactivate");
-    console.log(url);
     var options = {
       method: "POST",
       url: url,
@@ -91,9 +94,9 @@ module.exports = {
         }
       })
     };
-    request(options, function (error, response) {
+    request(options, async function (error, response) {
       if (error) throw new Error(error);
-      console.log(response.body);
+      await restartMacrosRuntime(deviceId).catch(err => {throw new Error(err)});
     });
   },
 
@@ -116,7 +119,6 @@ module.exports = {
     };
     request(options, function (error, response) {
       if (error) throw new Error(error);
-      //console.log(response.body);
     });
   },
 
@@ -137,7 +139,6 @@ module.exports = {
     };
     request(options, function (error, response) {
       if (error) throw new Error(error);
-      //console.log(response.body);
     });
   },
 
@@ -159,7 +160,6 @@ module.exports = {
     };
     request(options, function (error, response) {
       if (error) throw new Error(error);
-      console.log(response.body);
     });
   },
 
@@ -177,7 +177,6 @@ module.exports = {
     };
     request(options, function (error, response) {
       if (error) throw new Error(error);
-      console.log(response.body);
     });
   },
 
@@ -203,12 +202,18 @@ module.exports = {
       };
       request(options, function (error, response) {
         if (error) throw new Error(error);
-        resolve(JSON.parse(response.body).result.Macro);
+        const result = JSON.parse(response.body).result
+        if (result.hasOwnProperty('Macro')) {
+          resolve(result.Macro);
+        } else {
+          resolve([]);
+        }
+
       });
     });
   },
 
-  restoreBackup: function (deviceId, checksum, filename) {
+  restoreBackup: function (deviceId, checksum, filename, templateFolderName = null) {
     return new Promise(resolve => {
       var options = {
         'method': 'POST',
@@ -224,7 +229,8 @@ module.exports = {
             "ChecksumType": "SHA512",
             "Mode": "Add",
             "Origin": "Provisioning",
-            "URL": "http://websrv2.ciscofrance.com:15139/uploads/backups/" + filename
+            // "URL": `http://websrv2.ciscofrance.com:15139/uploads/${templateFolderName ? `templates/${templateFolderName}/${filename}` : `backups/${filename}` }`
+            "URL": `http://1464-80-215-246-177.ngrok.io/uploads/${templateFolderName ? `templates/${templateFolderName}/${filename}` : `backups/${filename}` }`
           }
         })
 
@@ -234,5 +240,56 @@ module.exports = {
         resolve(JSON.parse(response.body));
       });
     });
+  },
+
+  getBackupFile: function (ip, filename, templateName = null) {
+    return new Promise(function (resolve, reject) {
+      process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = 0;
+      try {
+        const pathToCreateFile = templateName ? `./public/uploads/templates/${templateName}/${filename}` : `./public/uploads/backups/${filename}`
+        var options = {
+          'method': 'GET',
+          'url': `http://presence:C1sc0123@${ip}/api/backup`,
+          'headers': {
+            'Content-Type': 'application/json'
+          },
+        }
+        request(options, function (error, response) {
+            if (error) reject(error);
+            resolve({
+              ip: ip,
+              status: "succes"
+            });
+          })
+          .pipe(fs.createWriteStream(pathToCreateFile))
+          .on('close', function () {
+            console.log('File written!');
+          });
+      } catch (error) {
+        reject(error);
+      }
+    });
   }
 };
+
+
+
+/**
+ * Restarts all of the macros set up on this device.
+ * @param {string} deviceId The webex ID of the device
+ */
+function restartMacrosRuntime(deviceId) {
+  var options = {
+    method: "POST",
+    url: 'https://webexapis.com/v1/xapi/command/Macros.Runtime.Restart',
+    headers: {
+      Authorization: "Bearer " + process.env.BOT_TOKEN,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      deviceId: deviceId
+    })
+  };
+
+  return promisify(request)(options)
+}

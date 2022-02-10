@@ -9,6 +9,7 @@ const dataSchema = mongoose.Schema(
     mac: {
       type: String,
       required: true,
+      unique: true
     },
     ip: {
       type: String,
@@ -17,6 +18,7 @@ const dataSchema = mongoose.Schema(
     webexId: {
       type: String,
       required: true,
+      unique: true
     },
     backupFileName: {
       type: String,

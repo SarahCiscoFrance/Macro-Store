@@ -29,7 +29,7 @@ xapi.event.on('UserInterface Message Prompt Response', (event) => {
     case 'book':
       switch(event.OptionId){
         case '1':
-          //console.log(15)
+
           booking_add(15);
           break;
         case '2':

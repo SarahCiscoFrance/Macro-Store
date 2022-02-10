@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title><%= title %></title>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <link rel="icon" href="/images/favicon.svg">
+  <link rel="stylesheet" href="/stylesheets/momentum-ui-icons.min.css">
+  <link rel="stylesheet" href="/stylesheets/momentum-ui.min.css">
+  <link rel='stylesheet' href='/stylesheets/style.css' />
+  <link rel='stylesheet' href='/stylesheets/card-style.css' />
+  <!-- <link rel='stylesheet' href='/stylesheets/table.css' /> -->
+</head>
+<style>
+  .unselectable{
+     cursor: not-allowed;
+  }
+  
+  .topCornerMsgContainer{
+   position:absolute;
+   top:0;
+   right:0;
+   display: flex;
+   flex-direction: column;
+   margin: 1%;
+  }
+
+  .topCornerMsg{
+   display: flex;
+   align-items: center;
+   margin-bottom: 2.5%;
+  }
+
+  
+  .macroTable tr td:nth-child(1) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+</style>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+<body>
+  <%- include('./components/top-bar.ejs') %>
+  <%- include('./components/loader.ejs') %>
+
+  <div class="md-button__container--small" style="position: fixed;top: 120px;right: 0px;z-index: 1;">
+    <button id="save-button" class="md-button md-button--circle md-button--68 md-button--green" alt="Save" type="button"
+      aria-label="Save">
+      <span class="md-button__children">
+        <i class="icon icon-save_24"></i>
+      </span>
+    </button>
+    <div class="md-button__label">Save</div>
+  </div>
+
+  <div style="display: flex; flex-direction: row; justify-content: center;">
+    <div class="md-data-table" style="width: 90%;">
+      <div class="md-data-table__wrapper">
+        <table class="testTableClass">
+          <thead class="md-data-table__thead">
+            <tr>
+              <th style="width: 6rem">Codec</th>
+              <th style="width: 8rem">Status</th>
+              <th style="width: 14rem">Macros</th>
+              <th style="width: 8rem; text-align: center;">Add new</th>
+            </tr>
+          </thead>
+          <tbody class="md-data-table__tbody">
+            <% var deviceCpt = 0; %>
+            <% for (device of devices) { %>
+            <tr class="<%= device.connectionStatus === 'disconnected' ? 'unselectable' : ''%>">
+              <td> <%= device.displayName %> </td>
+              <td> <span
+                  class="md-badge md-badge--<%= device.connectionStatus === 'connected'?'green-pastel':'yellow-pastel'%>"><%= device.connectionStatus %></span>
+              </td>
+              <td>
+                <table class="macroTable" id="macroTable<%=deviceCpt%>">
+                  <tbody>
+                    <% device.macros.forEach(function(macro, index) { %>
+                    <tr>
+                      <td><%= macro.Name %></td>
+                      <td>
+                        <div class="md-input-container md-toggle-switch ">
+                          <% if( macro.Active === 'True') { %>
+                          <input class="md-input md-toggle-switch__input id-check"
+                            data-associate-macro="<%=macro.Name%>" data-device-id="<%=device.id%>" type="checkbox"
+                            aria-checked="true" name="" id="toggleSwitch<%=deviceCpt+'-'+index%>" value="" checked />
+                          <% } else { %>
+                          <input class="md-input md-toggle-switch__input id-check"
+                            data-associate-macro="<%=macro.Name%>" data-device-id="<%=device.id%>" type="checkbox"
+                            aria-checked="false" name="" id="toggleSwitch<%=deviceCpt+'-'+index%>" value="" />
+                          <% } %>
+                          <label class="md-toggle-switch__label" for="toggleSwitch<%=deviceCpt+'-'+index%>">
+                            <span class="md-toggle-switch__label__container"></span>
+                          </label>
+                        </div>
+                      </td>
+                      <td>
+                        <form class="deleteMacroFromDevice" action="/deleteMacroOnDevice" method="POST">
+                          <input type="text" name="macroName" id="macroName" value="<%=macro.Name%>" hidden>
+                          <input type="text" name="deviceId" id="deviceId" value="<%=device.id%>" hidden>
+                          <div class="docs-example docs-example--spacing">
+                            <button type="submit"
+                              class="md-button md-button--red md-button--28 md-button-remove-macro">Remove</button>
+                          </div>
+                        </form>
+                      </td>
+                    </tr>
+                    <% }) %>
+                  </tbody>
+                </table>
+              </td>
+              <td style="text-align: center;">
+                <% if(device.connectionStatus !== "disconnected"){ %>
+                <button
+                  class="md-button md-button--circle md-button--56 md-activity md-activity__chat md-button-add-macro"
+                  data-device_id="<%= device.id %>"
+                  data-macro_table="<%= deviceCpt %>"
+                  alt="Plus" type="button" aria-label="Plus">
+                <% } else { %>
+                  <button
+                  class="md-button md-button--circle md-button--56 md-activity md-activity__chat md-button-add-macro"
+                  alt="Plus" type="button" aria-label="Plus" disabled>
+                <% }%>
+                  <span class="md-button__children">
+                    <i class="icon icon-plus_24"></i>
+                  </span>
+                </button>
+              </td>
+            </tr>
+            <% deviceCpt++ %>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- :::::::::: -->
+
+  <div id="add-macro-modal" class="md-modal__backdrop fade in" style="display: none;">
+    <div role="dialog" id="react-aria-modal-dialog" class="md-modal md-modal--large in" aria-labelledby="modal5">
+      <div class="md-modal__content">
+        <div class="md-modal__flex-container">
+          <div class="md-modal__header">
+            <span class="md-modal__title">Add a Macro to Device</span>
+            <span class="md-modal__message">List of macros retrieved from GitHub</span>
+            <button class="md-close md-modal__close"></button>
+          </div>
+          <div class="md-modal__body" style="justify-content: center; padding: 1%;">
+            <div style="overflow-y: scroll; border: dashed #00a0d0 2.5px;">
+              <% if (githubMacros.length > 0) { %>
+                <% for (macroInfo of githubMacros) { %>
+                <article class="card" style="margin-bottom: 0%;">
+                  <div class="card-content" style="align-items: center; position: relative;">
+                    <form id="removeGithubMacroForm" method="GET" action="deleteGithubMacro/<%= macroInfo._id%>" style="position:absolute; top:0; left:0; padding: 1%;">
+                      <button type="submit" style="all: unset;">
+                        <i style="cursor: pointer;" onmouseover="this.style.color='#FF0000';" onmouseout="this.style.color='';"
+                        class="icon icon-delete_24"></i>
+                      </button>
+                    </form>
+                    <div class="topCornerMsgContainer">
+                      <% if(macroInfo.need_adjustment){%>
+                        <p class="topCornerMsg"><i style="color: #ffab00" class="icon icon-warning_32"></i> &nbsp; This macro need adjustment to works </p>
+                        <% } %>
+                        <% if(macroInfo.have_xml_file){%>
+                          <p class="topCornerMsg"><i style="color: #ffab00" class="icon icon-warning_32"></i> &nbsp; This macro depends on a UI XML file </p>
+                        <% } %> 
+                    </div>
+
+                    <i class="icon icon-file-text_36"></i>
+                    <h2><%= macroInfo.name %></h2>
+                    <p style="margin-bottom: 0.5em;">from : <%= macroInfo.author %></p>
+                    <% if(macroInfo.have_readme_file){%>
+                    <p style="margin-bottom: 0.5em"><a style="color: #00b7ff;" target="_blank" rel="noopener noreferrer" href="<%=macroInfo.readme_html_url%>">documentation</a></p>
+                    <% } %>
+                    <br>
+                    <form class="addGithubMacroToDeviceForm" method="POST" action="/addGithubMacroToDevice" data-macro_table="test" data-macro_name="<%=macroInfo.name%>">
+                      <input type="text" name="macroContentUrl" value="<%=macroInfo.macro_content_url%>" hidden/>
+                      <% if(macroInfo.have_xml_file){%>
+                      <input type="text" name="xmlFileContentUrl" value="<%=macroInfo.xml_file_content_url%>" hidden/>
+                      <% } %>
+                      <input type="text" name="deviceId" value="test" hidden/>
+
+                      <div class="docs-example docs-example--spacing">
+                        <button type="submit" class="md-button md-button--blue">Install on Device</button>
+                      </div>
+                  </form>
+                  </div>
+                </article>
+                <% } %>
+              <% } else { %> 
+                <h3 style="text-align: center;">None</h3>
+              <% } %> 
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; align-items: center;">
+            <div class="expandable" style="cursor:pointer; margin-top: 2%;"><span>Didn't find your macro? <i class="icon icon-arrow-filled-down_12"></i></span></div>
+            <div class="content" style="display:none; " >
+                <form id="newGithubMacroForm" method="POST" action="/githubMacro" style="display: flex; flex-direction: column; align-items: center;">
+                  <div class="md-input-group medium-6 columns">
+
+                    <label class="md-label" for="normalInput">GitHub Repo URL</label>
+                    <input style="margin-bottom: 1rem;" class="md-input" name="repo_url" id="repo_url" type="text" placeholder="URL" size="80" required>
+                    <div class="md-checkbox-group">
+                      <div class="md-input-container md-checkbox ">
+                        <input aria-checked="true" class="md-input md-checkbox__input" type="checkbox" name="need_adjustment" tabindex="0" id="needAdjustmentCheckbox" value="true">
+                        <label class="md-label md-checkbox__label" for="needAdjustmentCheckbox">
+                          <span>Macro need adjustment ?</span>
+                        </label>
+                      </div>
+                   </div>
+                  </div>
+                  <button type="submit" add-github-macro-btn" class="md-button md-button--36 md-button--default" alt="Add Github Macro" type="button"
+                  aria-label="Add Github Macro">
+                  <span class="md-button__children" style="opacity: 1;">Add</span>
+                </button>
+                </form>
+            </div>
+          </div>
+          <div class="md-modal__footer">
+            <button id="close_add-macro-modal" class="md-button md-button--36 md-button--default" alt="Close Modal" type="button"
+              aria-label="Close Modal">
+              <span class="md-button__children" style="opacity: 1;">Cancel</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+    <!-- :::::::::: -->
+
+    <div id="save-modal" class="md-modal__backdrop fade in" style="display: none;">
+      <div role="dialog" id="react-aria-modal-dialog" class="md-modal md-modal--large in" aria-labelledby="modal5">
+        <div class="md-modal__content">
+          <div class="md-modal__flex-container">
+            <div class="md-modal__header">
+              <span class="md-modal__title">Save Template</span>
+              <span class="md-modal__message">The state of all Cisco Endpoint will be saved in a Template</span>
+              <button class="md-close md-modal__close close-save-modal"></button>
+            </div>
+            <div class="md-modal__body">
+              <form id="saveTemplateForm" method="POST" action="/saveTemplate" style="display: flex;justify-content: center;">
+                <div class="md-input-group medium-6 columns">
+
+                  <label class="md-label" for="normalInput">Name</label>
+                  <input style="margin-bottom: 1rem;" class="md-input" name="templateName" id="templateName" type="text" placeholder="Template Name" required>
+                  <% for (device of devices){ %>
+                    <% if(device.connectionStatus !== "disconnected"){ %>
+                    <input type="text" name="devicesIp[]" value="<%=device.ip%>" hidden/>
+                    <input type="text" name="devicesMac[]" value="<%=device.mac%>" hidden/>
+                    <input type="text" name="devicesName[]" value="<%=device.displayName%>" hidden/>
+                    <input type="text" name="devicesId[]" value="<%=device.id%>" hidden/>
+                  <% } } %>
+
+                  <label class="md-label" for="textArea">Description</label>
+                  <textarea style="margin-bottom: 1rem;" class="md-input" id="templateDescription" name="templateDescription" rows="10" placeholder="Description Text"></textarea>
+                  <div class="md-checkbox-group">
+                    <div class="md-input-container md-checkbox ">
+                      <input aria-checked="true" class="md-input md-checkbox__input" type="checkbox" name="isDefaultTemplate" tabindex="0" id="Checkbox" value="true">
+                      <label class="md-label md-checkbox__label" for="Checkbox">
+                        <span>Default Template</span>
+                      </label>
+                    </div>
+                 </div>
+                </div>
+              </form>
+            </div>
+            <div class="md-modal__footer">
+              <button class="md-button md-button--36 md-button--default" alt="Close Modal" type="button"
+                aria-label="Close Modal">
+                <span class="md-button__children close-save-modal" style="opacity: 1;">Cancel</span>
+              </button>
+              <button class="md-button md-button--36 md-button--blue" alt="Submit Form" type="submit" form="saveTemplateForm"
+                aria-label="Submit Form">
+                <span class="md-button__children" style="opacity: 1;">OK</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  <!-- ::::::::::::: -->
+
+  <div id="confirmation-modal" class="md-modal__backdrop fade in" style="display: none;">
+    <div role="dialog" id="react-aria-modal-dialog" class="md-modal md-modal--dialog in" aria-labelledby="modalDialog"
+      tabindex="-1">
+      <div class="md-modal__content">
+        <div class="md-modal__flex-container">
+          <div class="md-modal__header">
+            <span class="md-modal__title">Warning <i class="icon icon-warning_20"></i></span>
+            <button class="md-close md-modal__close"></button>
+          </div>
+          <div class="md-modal__body"><span>Are you sure you want to delete this macro ?</span></div>
+          <div class="md-modal__footer">
+            <button id="close-confirmation" class="md-button md-button--36 md-button--default" alt="Close Modal"
+              type="button" aria-label="Close Modal" tabindex="0">
+              <span class="md-button__children" style="opacity: 1;">Cancel</span>
+            </button>
+            <button id="delete-modal-btn" class="md-button md-button--36 md-button--red" alt="Submit Form" type="button"
+              aria-label="Submit Form" tabindex="0">
+              <span class="md-button__children" style="opacity: 1;">Delete</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ::::::::::: -->
+
+  <div id="notification" class="notification" hidden>
+    <div class="md-alert md-alert--success">
+      <div class="md-alert__icon"></div>
+      <div class="md-alert__content">
+        <div id="notification-title" class="md-alert__title">Title goes here</div>
+        <div id="notification-msg" class="md-alert__message">
+          Success text here. Lorem ipsum dolor sit amet, consectetur.
+        </div>
+      </div>
+      <div class="md-alert__button">
+        <button id="remove-notification" type="button" class="md-button md-button--circle md-button--large">
+          <span class="md-button__children icon icon-cancel_14"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    $(document).ready(function () {
+
+      var timer = null;
+
+      function showNotification(type, title, msg) {
+        //remove class
+        $("#notification").find(">:first-child").removeClass("md-alert--success");
+        $("#notification").find(">:first-child").removeClass("md-alert--error");
+
+        //remove previous notification
+        $("#notification").hide();
+
+        //add specified class
+        $("#notification").find(">:first-child").addClass(type);
+        $("#notification-title").html(title);
+        $("#notification-msg").html(msg);
+        $("#notification").show('slow');
+        if (!(timer === null)) {
+          clearTimeout(timer);
+          timeout = null;
+        }
+        timer = setTimeout(() => {
+          $("#notification").hide('slow');
+        }, 5000);
+      }
+
+      $(".md-close").on("click", function () {
+        console.log("close");
+        $(this).closest('.md-modal__backdrop').hide()
+      });
+
+      $("#save-button").on("click", function () {
+        $('#save-modal').show()
+      });
+
+      $(".close-save-modal").click(function () {
+        $("#save-modal").hide();
+      });
+
+      $(".md-button-add-macro").on("click", function () {
+        var deviceId = $(this).data('device_id');
+        var macroTableNumber = $(this).data('macro_table');
+        $('.addGithubMacroToDeviceForm :input[name=deviceId]').each(function() {
+             $(this).val(deviceId)
+        });
+        $('.addGithubMacroToDeviceForm').each(function() {
+             $(this).data('macro_table', macroTableNumber)
+        });
+        $("#add-macro-modal").show()
+      });
+
+      $("#close_add-macro-modal").on("click", function () {
+        $("#add-macro-modal").hide()
+      });
+
+      //To enable or disable macro on installation
+      $(document).on("click", ".id-check", function () {
+        var deviceId = $(this).data('device-id');
+        var macroName = $(this).data('associate-macro');
+        var isActive = $(this).is(':checked');
+        $.ajax({
+            type: "POST",
+            url: "/changeMacroActivationStatus",
+            dataType: 'json',
+            data: {
+              deviceId: deviceId,
+              macroName: macroName,
+              isMacroActive: isActive
+            }
+          })
+          .done(
+            function (response) {
+              if (response.code === "204") {
+                showNotification("md-alert--success", "Success",
+                  `Macro ${macroName} successfully ${isActive?"activated":"deactivated"}`)
+              } else if (response.code === "500") {
+                showNotification("md-alert--error", "Error", "error : " + response.msg)
+              }
+            }
+          );
+      });
+
+
+
+      $(document).on("submit", '.addGithubMacroToDeviceForm', function (e) {
+        $('#add-macro-modal').hide();
+        var form = $(this);
+        const deviceId = form.find('input[name="deviceId"]').val()
+        const macroName = $(this).data('macro_name').replace('.js', '');
+        const macroTableNumber = $(this).data('macro_table');
+        const ramdomNumber = new Date().valueOf();
+        e.preventDefault(); // avoid to execute the actual submit of the form.
+        var url = form.attr('action');
+        $.ajax({
+              type: "POST",
+              url: url,
+              dataType: 'json',
+              data: form.serialize() // serializes the form's elements.
+        })
+        .done(
+              function (response) {
+                if (response.code === "204") {
+                  //If macro not already in table we add it
+                  if($(`#macroTable${macroTableNumber} tr > td:contains(${macroName})`).length == 0){
+                    $('#macroTable'+macroTableNumber).append(`<tr>
+                      <td>${macroName}</td>
+                      <td>
+                        <div class="md-input-container md-toggle-switch ">
+                          <input class="md-input md-toggle-switch__input id-check"
+                            data-associate-macro=${macroName} data-device-id="${deviceId}" type="checkbox"
+                            aria-checked="false" name="" id="toggleSwitch${ramdomNumber}" value="" />
+                          <label class="md-toggle-switch__label" for="toggleSwitch${ramdomNumber}">
+                            <span class="md-toggle-switch__label__container"></span>
+                          </label>
+                        </div>
+                      </td>
+                      <td>
+                        <form class="deleteMacroFromDevice" action="/deleteMacroOnDevice" method="POST">
+                          <input type="text" name="macroName" id="macroName" value="${macroName}" hidden>
+                          <input type="text" name="deviceId" id="deviceId" value="${deviceId}" hidden>
+                          <div class="docs-example docs-example--spacing">
+                            <button type="submit"
+                              class="md-button md-button--red md-button--28 md-button-remove-macro">Remove</button>
+                          </div>
+                        </form>
+                      </td>
+                    </tr>`);
+                  }
+                  $(`#macroTable${macroTableNumber} tr > td:contains(${macroName})`).css("color", "#00ab50");
+                  showNotification("md-alert--success", "Success", "the macro has been added to device")
+                } else if (response.code === "500") {
+                  showNotification("md-alert--error", "Error", "error : " + response.msg)
+                }
+              }
+          );
+      });
+
+      // To collapse div (to add a github macro)
+      $('.expandable').click(function(){
+          $content =  $(this).next();
+          $content.slideToggle(500);
+      });
+
+      $(document).on("submit", '.deleteMacroFromDevice', function (e) {
+        var form = $(this);
+        $("#delete-modal-btn").unbind('click');
+        $("#close-confirmation").unbind('click');
+        e.preventDefault(); // avoid to execute the actual submit of the form.
+        $("#confirmation-modal").show();
+        $("#delete-modal-btn").on("click", function () {
+          var row = form.closest("tr");
+          var url = form.attr('action');
+          $.ajax({
+              type: "POST",
+              url: url,
+              dataType: 'json',
+              data: form.serialize() // serializes the form's elements.
+            })
+            .done(
+              function (response) {
+                if (response.code === "204") {
+                  row.remove();
+                  showNotification("md-alert--success", "Success", "the macro has been removed")
+                } else if (response.code === "500") {
+                  showNotification("md-alert--error", "Error", "error : " + response.msg)
+                }
+              }
+            );
+          $("#confirmation-modal").hide();
+        });
+
+        $("#close-confirmation").on("click", function () {
+          $("#confirmation-modal").hide();
+        });
+      });
+
+
+      $(document).on("submit", '#saveTemplateForm', function (e) {
+        e.preventDefault();
+        $('#save-modal').hide()
+        var form = $(this)
+        var url = form.attr('action');
+        $.ajax({
+            type: "POST",
+            url: url,
+            dataType: 'json',
+            data: form.serialize()
+        })
+          .done(
+            function (response) {
+              if (response.code === "204") {
+                showNotification("md-alert--success", "Success", "the template has been saved")
+              } else if (response.code === "500") {
+                showNotification("md-alert--error", "Error", "error : " + response.msg)
+              }
+            }
+          );
+      });
+      
+      $(document).on("submit", '#newGithubMacroForm', function (e) {
+        e.preventDefault();
+        var form = $(this)
+        var url = form.attr('action');
+        var method = form.attr('method');
+        $.ajax({
+            type: method,
+            url: url,
+            dataType: 'json',
+            data: form.serialize()
+        })
+          .done(
+            function (response) {
+              console.log(response)
+              if (response.code === "204") {
+                location.reload();
+                showNotification("md-alert--success", "Success", "the template has been saved")
+              } else if (response.code === "500") {
+                showNotification("md-alert--error", "Error", "error : " + response.msg)
+              }
+            }
+          );
+      });
+
+      $(document).on("submit", '#removeGithubMacroForm', function (e) {
+        e.preventDefault();
+        if (confirm('Do you really want to remove this macro from the list?')) {
+          var form = $(this)
+        var url = form.attr('action');
+        var method = form.attr('method');
+        $.ajax({
+            type: method,
+            url: url,
+            dataType: 'json',
+            data: form.serialize()
+        })
+          .done(
+            function (response) {
+              if (response.code === "204") {
+                showNotification("md-alert--success", "Success", "the macro has been removed from the list")
+                location.reload();
+              } else if (response.code === "500") {
+                showNotification("md-alert--error", "Error", "error : " + response.msg)
+              }
+            }
+          );
+        }
+      });
+    });
+  </script>
+</body>
