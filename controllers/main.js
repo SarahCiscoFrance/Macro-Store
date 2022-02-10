@@ -631,7 +631,7 @@ exports.declareGithubMacro = async (req, res) => {
         repo_api_url: repo_api_url,
         repo_name: repo_name,
         author: author,
-        need_adjustment: macroNeedAdjustment ?? false
+        need_adjustment: macroNeedAdjustment ? true : false
       });
 
       const macro = await newMacro.save().catch(err => {
@@ -683,7 +683,7 @@ exports.deleteGithubMacro = async (req, res) => {
 exports.addGithubMacroToDevice = async (req, res) => {
   const deviceId = req.body.deviceId;
   const macroContentUrl = req.body.macroContentUrl;
-  const xmlFileContentUrl = req.body.xmlFileContentUrl ?? null;
+  const xmlFileContentUrl = req.body.xmlFileContentUrl ? req.body.xmlFileContentUrl : null;
 
   const file = await readGithubFile(macroContentUrl);
 
