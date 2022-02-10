@@ -548,12 +548,27 @@ exports.saveTemplate = async (req, res, next) => {
 
 exports.deleteTemplate = async (req, res, next) => {
   const templateId = req.params.id;
+  const template = await Template.findOne({_id: templateId});
+  try {
+    fs.rmdir(template.path, { recursive: true }, (err) => {
+      if (err) {
+          throw err;
+      }
+  });
+  } catch (error) {
+    return res.json({
+      code: "500",
+      msg: error.message
+    });
+  }
+
   await Template.deleteOne({_id: templateId}).exec().catch(error => {
     return res.json({
       code: "500",
       msg: error.message
     });
   });
+  
   res.json({
     code: "204"
   });
