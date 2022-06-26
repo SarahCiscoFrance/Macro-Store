@@ -20,9 +20,13 @@ const templateSchema = mongoose.Schema(
       type: Date,
       default: Date.now
     },
-    involvedDevices: {
+    involvedWebexDevices: {
       type: Array,
       required: true,
+    },
+    involvedComputers: {
+      type: Array,
+      required: false,
     }
   },
 );

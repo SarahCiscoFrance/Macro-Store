@@ -4,10 +4,13 @@ const request = require("request");
 const path = require('path');
 var crypto = require('crypto');
 const xAPIUtils = require("../xAPICloud/utils");
+const ApplescriptAction = require('../utils/applescript-action')
+const ComputerAction = require('../utils/computer-action')
 const mongoose = require("mongoose");
 const Device = require('../models/device');
 const Template = require('../models/template');
 const Macro = require('../models/macro');
+const Computer = require('../models/computer');
 const {
   promisify
 } = require("util");
@@ -17,7 +20,9 @@ const {
 const { env } = require("process");
 
 mongoose.connect("mongodb://localhost:27017/macro-store", {
-  useNewUrlParser: true
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  useCreateIndex: true
 });
 
 exports.getIndex = async (req, res, next) => {
@@ -43,8 +48,12 @@ exports.getExpert = async (req, res, next) => {
 };
 
 exports.getAdvanced = async (req, res, next) => {
+  const computers = await Computer.find({}).exec();
   let promises = [];
   let github_promises = [];
+  let branding_promises = [];
+  let audio_promises = [];
+  let extensions_promises = [];
 
   const githubMacros = await Macro.find({});
   githubMacros.forEach(githubMacro => {
@@ -54,6 +63,9 @@ exports.getAdvanced = async (req, res, next) => {
   xAPIUtils.getDevices().then(devices => {
     devices.filter(e => e.connectionStatus != "disconnected").forEach(device => {
       promises.push(xAPIUtils.getAllMacroFromDevice(device.id));
+      branding_promises.push(xAPIUtils.getBrandingFromDevice(device.id, "Branding"));
+      audio_promises.push(xAPIUtils.getAudioInfoFromDevice(device.id));
+      extensions_promises.push(xAPIUtils.getExtensionsFromDevice(device.id));
     });
 
     Promise.all(promises).then(macrosPerDevice => {
@@ -65,7 +77,7 @@ exports.getAdvanced = async (req, res, next) => {
         macros: []
       })));
 
-      Promise.all(github_promises).then(github_repo_files => {
+      Promise.all(github_promises).then(async github_repo_files => {
         const githubMacrosUpdated = githubMacros.map((githubMacro, index) => ({
           ...githubMacro._doc, // <-- ._doc needed because mongoose return not useful info. Only info in ._doc are useful
           have_xml_file: github_repo_files[index].some(e => e.name.includes('.xml')),
@@ -75,21 +87,62 @@ exports.getAdvanced = async (req, res, next) => {
           readme_html_url: github_repo_files[index].some(e => e.name.includes('.md')) ? github_repo_files[index][github_repo_files[index].findIndex(e => e.name.includes('.md'))].html_url : null,
         }))
 
+        const brandings = await Promise.all(branding_promises).catch(err => {
+          console.log(err)
+          res.json({
+            code: "500",
+            msg: err.message
+          });
+        });
+
+        const audioResult = await Promise.all(audio_promises).catch(err => {
+        console.log(err)
+        res.json({
+          code: "500",
+          msg: err.message
+          });
+        });
+
+        const audioInfo = audioResult.map(i => ({
+          deviceId: i.deviceId,
+          volume: i.result.Audio.Volume,
+          ultrasound: i.result.Audio.Ultrasound.Volume
+        }))
+
+        const uiExtensionsResult = await Promise.all(extensions_promises).catch(err => {
+          console.log(err)
+          res.json({
+            code: "500",
+            msg: "Error when trying to get UI extensions informations from Webex. Please Reload this page."
+            });
+        });
+
         res.render("advanced", {
           title: "Advanced Mode",
           path: "/advanced",
           devices: devicesWithMacros,
-          githubMacros: githubMacrosUpdated
+          githubMacros: githubMacrosUpdated,
+          uiExtensions: uiExtensionsResult,
+          brandings: brandings,
+          computers: computers,
+          audio: audioInfo
         });
 
       }).catch(err => {
+        console.log(err)
         res.json({
           code: "500",
-          msg: err.message
+          msg: "Failed to retrive Github information"
         });
       });
 
-    });
+    }).catch(err => {
+      console.log(err)
+      res.json({
+        code: "500",
+        msg: "Failed to retrive information about macro"
+      });
+    })
   });
 
 };
@@ -152,7 +205,7 @@ exports.uploadFile = async (req, res, next) => {
       if (err) {
         return res.status(500).send(err);
       }
-      res.redirect("/");
+      res.redirect("/expert");
     });
   }
 };
@@ -248,6 +301,122 @@ exports.deleteMacroOnDevice = (req, res, next) => {
     });
   }
 
+};
+
+exports.uploadBranding = async (req, res, next) => {
+  if (!req.files || Object.keys(req.files).length === 0) {
+    return res.status(400).send('No files were uploaded.');
+  }
+  const deviceId = req.body.deviceId;
+  const brandingImg = req.files.brandingImg;
+  let base64data = brandingImg.data.toString('base64');
+
+  try{
+    await xAPIUtils.uploadBranding(deviceId, base64data, "Branding")
+    res.json({
+      code: "204"
+    });
+  }
+  catch(error){
+    res.json({
+      code: "500",
+      msg: error.message
+    });
+  }
+ 
+};
+
+exports.restartDevice = async (req, res, next) => {
+  const deviceId = req.body.deviceId;
+  try {
+    const response = await xAPIUtils.restartDevice(deviceId);
+    const payload = JSON.parse(response.body)
+    if (response.statusCode >= 400){
+      res.json({
+        code: "500",
+        msg: payload.message
+      });
+    }
+    else{
+      res.json({
+        code: "204"
+      });
+    }
+  } catch (error) {
+    console.error(error);
+    res.json({
+      code: "500",
+      msg: error.message
+    });
+  }
+};
+
+exports.setStandbyMode = async (req, res, next) => {
+  const deviceId = req.body.deviceId;
+  const mode = req.params.mode;
+  if(mode === "Activate" || mode === "Deactivate"){
+    try {
+      const response = await xAPIUtils.setStandByMode(deviceId, mode);
+      const payload = JSON.parse(response.body)
+      if(response.statusCode > 400){
+        res.json({
+          code: "500",
+          msg: payload.errors[0].description
+        });
+      }
+      else{
+        res.json({
+          code: "204",
+          msg: `StandBy Mode ${mode}!`
+        });
+      }
+    } catch (error) {
+      res.json({
+        code: "500",
+        msg: error.message
+      });
+    }
+    
+  }else{
+    res.json({
+      code: "500",
+      msg: "Value of mode should be Activate or Deactivate"
+    });
+  }
+}
+
+exports.setVolume = async (req, res, next) => {
+  const deviceId = req.body.deviceId;
+  const level = parseInt(req.body.volumeLevel);
+  try {
+    var response = await xAPIUtils.setVolume(deviceId, level);
+    res.json({
+      code: "204"
+    });
+  } catch (error) {
+    console.error(error);
+    res.json({
+      code: "500",
+      msg: error.message
+    });
+  }
+};
+
+exports.clearBranding = async (req, res, next) => {
+  const deviceId = req.body.deviceId;
+  try {
+    await xAPIUtils.clearBranding(deviceId)
+    res.json({
+      code: "204"
+    });
+    
+  } catch (error) {
+    console.error(error);
+    res.json({
+      code: "500",
+      msg: error.message
+    });
+  }
 };
 
 exports.removeAllFile = (req, res, next) => {
@@ -447,14 +616,22 @@ exports.saveTemplate = async (req, res, next) => {
     devicesMac,
     devicesName,
     isDefaultTemplate,
+    selectedComputers,
+    selectedWebexDevices
   } = req.body
-
+  console.log(req.body)
   var devicesInfo = devicesIp.map((ip, i) => ({
     ip,
     id: devicesId[i],
     mac: devicesMac[i],
     name: devicesName[i]
   }))
+
+  devicesInfo = devicesInfo.filter(e => selectedWebexDevices.includes(e.id))
+
+  let computersIds = Array.isArray(selectedComputers) ? selectedComputers : [selectedComputers]
+  console.log(selectedComputers, computersIds)
+  const computersInfo = await Computer.find().where('_id').in(computersIds).exec();
 
   var promises = [];
   const templatePath = isDefaultTemplate ? `./public/uploads/templates/default` : `./public/uploads/templates/${templateName}`
@@ -493,21 +670,21 @@ exports.saveTemplate = async (req, res, next) => {
           name: templateName,
           description: templateDescription,
           path: templatePath,
-          involvedDevices: devicesInfo.map((device, i) => ({
+          involvedWebexDevices: devicesInfo.map((device, i) => ({
             mac: device.mac,
             name: device.name,
             backupFileName: `backup-${device.ip}.zip`
           })),
+          involvedComputers: computersInfo
         });
         template.save().then(() => {
           res.json({
             code: "204"
           });
         }).catch(error => {
-          console.log(error)
           res.json({
             code: "500",
-            msg: error.message
+            msg: error.code === 11000 ? "Template with this name already exist" :  error.message
           });
         })
       } else {
@@ -549,18 +726,16 @@ exports.saveTemplate = async (req, res, next) => {
 exports.deleteTemplate = async (req, res, next) => {
   const templateId = req.params.id;
   const template = await Template.findOne({_id: templateId});
-  try {
-    fs.rmdir(template.path, { recursive: true }, (err) => {
-      if (err) {
-          throw err;
-      }
+
+  fs.rmdir(template.path, { recursive: true }, (err) => {
+    if (err) {
+      return res.json({
+        code: "500",
+        msg: err.message
+      });
+    }
   });
-  } catch (error) {
-    return res.json({
-      code: "500",
-      msg: error.message
-    });
-  }
+
 
   await Template.deleteOne({_id: templateId}).exec().catch(error => {
     return res.json({
@@ -582,9 +757,9 @@ exports.loadTemplate = async (req, res, next) => {
   });
   const wbxDevices = await xAPIUtils.getDevices();
   let promises = [];
-  template.involvedDevices.forEach(async device => {
+  template.involvedWebexDevices.forEach(async device => {
     //here we get the updated info from Webex API about curent device
-    const webexDeviceInfo = wbxDevices.find(e => {
+    const webexDeviceLastInfo = wbxDevices.find(e => {
       return e.mac === device.mac
     });
 
@@ -595,18 +770,24 @@ exports.loadTemplate = async (req, res, next) => {
       });
     })
 
+    promises.push(xAPIUtils.restoreBackup(webexDeviceLastInfo.id, checksum, device.backupFileName, template.name))
+  });
 
-    promises.push(xAPIUtils.restoreBackup(webexDeviceInfo.id, checksum, device.backupFileName, template.name))
+  template.involvedComputers.forEach(async computer => {
+    const computersLastInfo = await Computer.findById(computer.id).exec();
+    const desktopBackgroundFilename = computer.desktopBackground.replace(/^.*[\\\/]/, '')
+    const script = ApplescriptAction.generateScript(computer.volumeLevel, computer.bluetooth, computer.closeApps, computer.appsToStart, `./${desktopBackgroundFilename}`)
+    promises.push(ComputerAction.sendScript(computersLastInfo, script))
+  })
 
-    Promise.all(promises).then(() => {
-      res.json({
-        code: "204"
-      });
-    }).catch(err => {
-      res.json({
-        code: "500",
-        msg: err.message
-      });
+  Promise.all(promises).then(() => {
+    res.json({
+      code: "204"
+    });
+  }).catch(err => {
+    res.json({
+      code: "500",
+      msg: err.message
     });
   });
 
@@ -723,6 +904,27 @@ exports.addGithubMacroToDevice = async (req, res) => {
       msg: err.message
     });
   })
+
+};
+
+exports.updateMacroOnDevice = async (req, res) => {
+  const deviceId = req.body.deviceId;
+  const macroName = req.body.macroName;
+  const macroContent = req.body.macroContent;
+
+  xAPIUtils.saveMacro(deviceId, macroName, "True", "True", macroContent).then(resp => {
+    console.log(resp)
+    res.json({
+      code: "204"
+    });
+  }).catch(err => {
+    res.json({
+      code: "500",
+      msg: err.message
+    });
+  })
+
+
 
 };
 

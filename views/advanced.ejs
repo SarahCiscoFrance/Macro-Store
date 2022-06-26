@@ -9,7 +9,6 @@
   <link rel="stylesheet" href="/stylesheets/momentum-ui.min.css">
   <link rel='stylesheet' href='/stylesheets/style.css' />
   <link rel='stylesheet' href='/stylesheets/card-style.css' />
-  <!-- <link rel='stylesheet' href='/stylesheets/table.css' /> -->
 </head>
 <style>
   .unselectable{
@@ -29,6 +28,11 @@
    display: flex;
    align-items: center;
    margin-bottom: 2.5%;
+  }
+
+  .macroTable {
+    box-shadow: 0px 8px 40px rgb(128 128 128 / 15%);
+    border-radius: 15px;
   }
 
   
@@ -55,31 +59,180 @@
     <div class="md-button__label">Save</div>
   </div>
 
-  <div style="display: flex; flex-direction: row; justify-content: center;">
-    <div class="md-data-table" style="width: 90%;">
-      <div class="md-data-table__wrapper">
-        <table class="testTableClass">
+  <div class="md-button-group" role="group" aria-label="" style="justify-content: center; padding: 2%;">
+    <button
+      class="switch-page md-button md-button--36 md-button--icon-group"
+      alt="Left" type="button" aria-label="Left">
+      <span class="md-button__children">
+        <i class="icon icon-arrow-left_12"></i>
+      </span>
+    </button>
+    <button
+      class="md-button md-button--36"
+      type="button" disabled="">
+      <span id="page-label" class="md-button__children">Webex Devices</span>
+    </button>
+    <button
+      class="switch-page md-button md-button--36 md-button--icon-group"
+      alt="Right" type="button" aria-label="Right">
+      <span class="md-button__children">
+        <i class="icon icon-arrow-right_12"></i>
+      </span>
+    </button>
+  </div>
+
+  <div id="webex-devices-container" style="display: flex; flex-direction: row; justify-content: center; height: 100%;">
+    <div class="md-data-table" style="width: 90%; height: 100%;">
+      <div class="md-data-table__wrapper" style="height: 100%;">
+        <table class="testTableClass" style="height: 100%;">
           <thead class="md-data-table__thead">
             <tr>
               <th style="width: 6rem">Codec</th>
-              <th style="width: 8rem">Status</th>
-              <th style="width: 14rem">Macros</th>
-              <th style="width: 8rem; text-align: center;">Add new</th>
+              <th style="width: 4rem">Branding</th>
+              <th style="width: 4rem">Volume</th>
+              <th style="width: 12rem">Macros</th>
+              <th style="width: 6rem">UI Extensions</th>
+              <th style="width: 4rem; text-align: center;">Add new macro</th>
             </tr>
           </thead>
           <tbody class="md-data-table__tbody">
             <% var deviceCpt = 0; %>
             <% for (device of devices) { %>
             <tr class="<%= device.connectionStatus === 'disconnected' ? 'unselectable' : ''%>">
-              <td> <%= device.displayName %> </td>
-              <td> <span
-                  class="md-badge md-badge--<%= device.connectionStatus === 'connected'?'green-pastel':'yellow-pastel'%>"><%= device.connectionStatus %></span>
+              <td>
+                <div style="display: flex;flex-direction: column; align-items: center; gap:10px;">
+                  <img style="width: 150px;"src="./images/cisco/cisco-logo-black.png">
+                  <span class="md-badge md-badge--pastel"><%= device.displayName %></span>
+                  <span class="md-badge md-badge--<%= device.connectionStatus === 'connected'?'green-pastel':'yellow-pastel'%>"><%= device.connectionStatus %></span>
+                  <fieldset style="border-radius: 5px;">
+                    <legend style="text-align: center;">General Information</legend>
+                    <ul style="margin-bottom: 5%;">
+                      <li><b>IP:</b> <%=device.ip%></li>
+                      <li><b>Product:</b> <%=device.product%></li>
+                    </ul>
+                    <div style="
+                    display: flex;
+                    justify-content: space-evenly;">
+                    <form class="restartDeviceForm" action="/restartDevice" method="POST">
+                      <input name="deviceId" value="<%=device.id%>" hidden>
+                      <button type="submit" class="md-button md-button--circle md-button--red icon icon-power-ac_16"></button>
+                      <p style="font-size: x-small;">Reboot</p>
+                    </form>
+
+                    <form class="deactivateStandbyForm" action="/setStandbyMode/Deactivate" method="POST">
+                      <input name="deviceId" value="<%=device.id%>" hidden>
+                      <button type="submit" class="md-button md-button--circle md-button--blue icon icon-back-to-fullscreen-adr_20"></button>
+                      <p style="font-size: x-small;">Wake Up</p>
+                    </form>
+
+                    <form class="activateStandbyForm" action="/setStandbyMode/Activate" method="POST">
+                      <input name="deviceId" value="<%=device.id%>" hidden>
+                      <button type="submit" class="md-button md-button--circle md-button--orange icon icon-close-space_18"></button>
+                      <p style="font-size: x-small;">StandBy</p>
+                    </form>
+                    </div>
+                  </fieldset>
+                </div>
               </td>
               <td>
+                <div>
+                <%if (brandings[deviceCpt] && brandings[deviceCpt].hasOwnProperty('result')){%>
+                <p style="text-align: center;" hidden>No branding</p>
+                <img style="margin-bottom: 10%;" src="data:image/png;base64, <%=brandings[deviceCpt].result.Data%>" alt="Branding" />
+                <div style="display: flex; align-items: center; flex-direction: column; justify-content: center;gap: 10px;">
+                  <div>
+                    <form class="uploadBrandingForm" action="/uploadBranding" method="POST">
+                      <input name="deviceId" value="<%=device.id%>" hidden>
+                      <label class="custom-file-upload">
+                        <input class="brandingInput" type="file" name="brandingImg" style="display: none;"  accept="image/*"/>
+                        <i class="icon icon-upload_18"></i> Update Branding
+                      </label>
+                      <div class="brandingBtnContainer" style="display: none; justify-content: center;">
+                        <button type="submit" class=" md-button md-button--circle md-button--green icon icon-send_20"></button>
+                      </div>
+                    </form>
+                  </div>
+                  <form class="clearBrandingForm" method="POST" action="/clearBranding">
+                    <input name="deviceId" value="<%=device.id%>" hidden>
+                    <button type="submit" class="clear-branding-button md-button md-button--circle md-button--red icon icon-delete_20"></button>
+                  </form>
+                </div>
+                <% } else if (brandings[deviceCpt]) { %>
+                  <p style="text-align: center;">No branding</p>
+                  <div style="display: flex;justify-content: center;">
+                      <form class="uploadBrandingForm" action="/uploadBranding" method="POST" encType="multipart/form-data">
+                        <input name="deviceId" value="<%=device.id%>" hidden>
+                        <label class="custom-file-upload">
+                          <input class="brandingInput" type="file" name="brandingImg" style="display: none;"  accept="image/*"/>
+                          <i class="icon icon-upload_18"></i> Upload Branding
+                        </label>
+                        <div class="brandingBtnContainer" style="display: none; justify-content: center;">
+                          <button type="submit" class=" md-button md-button--circle md-button--green icon icon-send_20"></button>
+                        </div>
+                      </form>
+                  </div>
+                <% } %>
+                </div>
+
+            </td>
+            <% var volume = audio.find(e => e.deviceId == device.id) ? audio.find(e => e.deviceId == device.id).volume : undefined %>
+            <% if(volume){ %>
+            <td style="text-align: center;height: 100%;"> 
+              <div style="display: flex;
+              flex-direction: column;
+              justify-content: center;
+              gap:5rem;
+              height: 100%;
+              box-shadow: 0px 8px 40px rgb(128 128 128 / 15%);border-radius: 15px;">
+                <div style="display: contents;">
+                  <label style="display: flex;align-items: center;justify-content: center;">Speaker &nbsp;<i class="icon icon-speaker_16"></i></label>
+                  <input 
+                  class="slider volumeSlider"
+                  style="transform: rotate(-90deg);"
+                  data-device_id="<%=device.id%>"
+                  type="range" 
+                  name="volumeInput" 
+                  id="speakerVolumeInputId<%=deviceCpt%>" 
+                  value="<%= volume %>" 
+                  min="0" 
+                  max="100" 
+                  oninput="speakerVolumeOutputId<%-deviceCpt%>.value = speakerVolumeInputId<%-deviceCpt%>.value + '%'">
+                  <output name="volumeOutput" id="speakerVolumeOutputId<%=deviceCpt%>"><%= volume %>%</output>
+                </div>
+  
+                <!-- <div>
+                  <label style="display: flex;align-items: center;font-weight: bold;">Proximity &nbsp;<i class="icon icon-proximity_16"></i></label>
+                  <input 
+                  class="slider ultrasoundVolumeSlider" 
+                  data-device_id="<%=device.id%>"
+                  type="range" 
+                  name="ultrasoundVolumeInput" 
+                  id="ultrasoundVolumeInputId<%=deviceCpt%>" 
+                  value="<%= volume %>" 
+                  min="0" 
+                  max="100" 
+                  oninput="ultrasoundVolumeOutputId<%-deviceCpt%>.value = ultrasoundVolumeInputId<%-deviceCpt%>.value + '%'">
+                  <output name="ultrasoundVolumeOutput" id="ultrasoundVolumeOutputId<%=deviceCpt%>"><%= volume %>%</output>
+                </div> -->
+              </div>
+            </td>
+            <% } else { %>
+              <td style="text-align: center;">
+                Speaker Info not available
+              </td>
+            <% } %>
+              <td>
+                <div style="display: flex;
+                flex-direction: column;
+                justify-content: center;
+                padding: 2%;
+                height: 100%;
+                box-shadow: 0px 8px 40px rgb(128 128 128 / 15%);border-radius: 15px;">
+                <% if(device.macros.length > 0) { %>
                 <table class="macroTable" id="macroTable<%=deviceCpt%>">
                   <tbody>
                     <% device.macros.forEach(function(macro, index) { %>
-                    <tr>
+                    <tr style="<%= device.macros.length -1 === index ? 'border-bottom: none' : '' %>">
                       <td><%= macro.Name %></td>
                       <td>
                         <div class="md-input-container md-toggle-switch ">
@@ -98,6 +251,21 @@
                         </div>
                       </td>
                       <td>
+                          <div class="md-button__container--small">
+                            <button
+                              class="edit-macro-btn md-button md-button--circle md-button--56 md-activity md-activity__tasks"
+                              data-device_id="<%= device.id %>"
+                              data-macro_id="<%= macro.id %>"
+                              data-macro_name="<%= macro.Name %>"
+                              data-macro_content="<%= macro.Content %>"
+                              alt="whiteboard" type="button" aria-label="whiteboard">
+                              <span class="md-button__children">
+                                <i class="icon icon-whiteboard_24"></i>
+                              </span>
+                            </button>
+                          </div>
+                      </td>
+                      <td>
                         <form class="deleteMacroFromDevice" action="/deleteMacroOnDevice" method="POST">
                           <input type="text" name="macroName" id="macroName" value="<%=macro.Name%>" hidden>
                           <input type="text" name="deviceId" id="deviceId" value="<%=device.id%>" hidden>
@@ -111,6 +279,39 @@
                     <% }) %>
                   </tbody>
                 </table>
+                <% } else { %>
+                  <p style="text-align: center;">No macro</p>
+                <% } %>
+              </div>
+              </td>
+              <td>
+                <div style="display: flex;
+                flex-direction: column;
+                justify-content: center;
+                height: 100%;
+                box-shadow: 0px 8px 40px rgb(128 128 128 / 15%);border-radius: 15px;">
+                <% const panels = uiExtensions.find(e => e.deviceId == device.id) ? uiExtensions.find(e => e.deviceId == device.id).panels : [] %>
+                <% if(panels.length > 0) { %>
+                <% for (panel of panels) { %>
+                  <div style="display: flex;flex-direction: column;align-items: center;padding: 10%;">
+                    <div style="
+                    width: 50px;height: 50px;
+                    border-radius: 50%;
+                    display: flex;
+                    flex-direction: row;
+                    justify-content: center;
+                    align-items: center;
+                    background:<%= panel.Color ?? 'grey' %>;"
+                    >
+                      <i style="color: white;" class="icon icon-apps_24"></i>
+                    </div>
+                    <p style="text-align: center;"><%= panel.Name %></p>
+                  </div> 
+                <% } %>
+                <% } else { %>
+                  <p style="text-align: center;">No UI Extensions</p>
+                <% } %>
+                </div>
               </td>
               <td style="text-align: center;">
                 <% if(device.connectionStatus !== "disconnected"){ %>
@@ -137,6 +338,227 @@
       </div>
     </div>
   </div>
+
+
+
+  <div id="computers-container" style="display: flex; flex-direction: row; justify-content: center; display: none;">
+
+    <div class="md-data-table" style="width: 60%;">
+      <div class="md-data-table__wrapper">
+        <table class="testTableClass">
+          <thead class="md-data-table__thead">
+            <tr>
+              <th style="width: 8rem">Computer</th>
+              <th style="width: 10rem">Action</th>
+            </tr>
+          </thead>
+          <tbody
+            class="md-data-table__tbody">
+            <% computers.forEach((computer,computer_index) => { %>
+            <tr>
+              <td>
+                <div style="display: flex; flex-direction:column; align-items:center">
+                  <img style="width: 250px;"src="./images/mac-img.png">
+                  <span class="md-badge md-badge--pastel"><%=computer.name%></span>
+                  <fieldset style="border-radius: 5px;">
+                    <legend>General Information</legend>
+                    <ul style="margin-bottom: 5%;">
+                      <li><b>IP:</b> <%=computer.ip%></li>
+                      <li><b>Username:</b> <%=computer.username%></li>
+                    </ul>
+                    <div style="
+                    display: flex;
+                    justify-content: space-evenly;">
+                    <div>
+                      <button type="submit" class="edit-computer-btn md-button md-button--circle md-button--orange icon icon-edit_16" 
+                      data-id="<%=computer.id%>"
+                      data-name="<%=computer.name%>"
+                      data-ip="<%=computer.ip%>"
+                      data-username="<%=computer.username%>"
+                      data-password="<%=computer.password%>"
+                      ></button>
+                    </div>
+                    <form class="deleteComputerForm" action="computers/delete/<%=computer.id%>" method="POST">
+                        <button type="submit" class="md-button md-button--circle md-button--red icon icon-delete_16"></button>
+                    </form>
+                    </div>
+                  </fieldset>
+                </div>
+              </td>
+              <td> 
+                <div class="computer-action-container">
+                  <form class="computer-action-form" style="display: flex; flex-direction: column;" method="POST" action="/computers/action">
+                    <input name="computerId" value="<%=computer.id%>" hidden>
+                    <label style="display: flex;align-items: center;font-weight: bold;">Speaker &nbsp;<i class="icon icon-speaker_16"></i></label>
+                    <input class="slider" type="range" name="volumeInput" id="volumeInputId<%=computer_index%>" value="<%=computer.volumeLevel%>" min="0" max="100" oninput="volumeOutputId<%-computer_index%>.value = volumeInputId<%-computer_index%>.value + '%'">
+                    <output name="volumeOutput" id="volumeOutputId<%=computer_index%>"><%=computer.volumeLevel%>%</output>
+                    <br>
+                    <label style="display: flex;align-items: center;font-weight: bold;">Bluetooth &nbsp;<i class="icon icon-bluetooth_16"></i></label>
+                    <div class="md-input-container md-toggle-switch ">
+                      <input
+                        class="md-input md-toggle-switch__input"
+                        type="checkbox"
+                        aria-checked="true"
+                        name="bluetooth"
+                        id="testToggleSwitch<%=computer_index%>"
+                        value="enable"
+                        onclick="$(this).attr('value', this.checked ? 1 : 0)"
+                        <%- computer.bluetooth ? 'checked' : '' %>
+                      />
+                      <label class="md-toggle-switch__label" for="testToggleSwitch<%=computer_index%>">
+                        <span class="md-toggle-switch__label__container"></span>
+                        <span class="md-toggle-switch__label__text"></span>
+                      </label>
+                    </div>
+                    <br>
+                    <div style="display: flex;justify-content: space-between;">
+                      <div>
+                        <label style="display: flex;align-items: center;font-weight: bold;">Close all apps &nbsp;<i class="icon icon-apps_16"></i></label>
+                        <div class="md-input-container md-checkbox">
+                          <input name="closeApps" id="basic-checkbox<%=computer_index%>" type="checkbox" class="md-input md-checkbox__input" value="1" onclick="$(this).attr('value', this.checked ? 1 : 0)" <%- computer.closeApps ? 'checked' : '' %>>
+                          <label class="md-checkbox__label" for="basic-checkbox<%=computer_index%>">
+                            <span></span>
+                          </label>
+                        </div>
+                      </div>
+                      <div>
+                        <div class="checkboxes">
+                          <label style="font-weight: bold;">Start apps &nbsp;<i class="icon icon-launch_16"></i></label>
+                          <ul>
+                            <li><input type="checkbox" name="appsToStart" value="Webex" <%- computer.appsToStart.includes('Webex') ? 'checked' : '' %>> Webex</li>
+                            <li><input type="checkbox" name="appsToStart" value="Microsoft Outlook" <%- computer.appsToStart.includes('Microsoft Outlook') ? 'checked' : '' %>> Microsoft Outlook</li>
+                            <li><input type="checkbox" name="appsToStart" value="Firefox" <%- computer.appsToStart.includes('Firefox') ? 'checked' : '' %>> Firefox</li>
+                            <li><input type="checkbox" name="appsToStart" value="Google Chrome" <%- computer.appsToStart.includes('Google Chrome') ? 'checked' : '' %>> Google Chrome</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                    <br>
+                    <label style="display: flex;align-items: center;font-weight: bold;">Desktop Background &nbsp;<i class="icon icon-back-to-fullscreen-adr_16"></i></label>
+
+                    <img style="margin-bottom:5%;width: 150px;" src="data:image/png;base64, <%=computer.desktopBackgroundBase64%>" alt="No Background" />
+                    <div>
+                        <label class="custom-file-upload">
+                          <input class="computerBackgroundInput" type="file" name="brandingImg" style="display: none;"  accept="image/*"/>
+                          <p><i class="icon icon-upload_18"></i> Upload Image</p>
+                        </label>
+                    </div>
+
+                    <br>
+                    <div class="docs-example docs-example--spacing">
+                      <button type="submit" class="md-button md-button--green">Save</button>
+                    </div>
+                  </form>
+                </div> 
+              </td>
+            </tr>
+            <% }) %>
+            <tr>
+              <td style="text-align: center;">
+                <i class="icon icon-add_24"></i>
+                <p>Add new computer</p>
+              </td>
+              <td>
+                  <form id="addNewComputerForm" action="/computers/add" method="POST"
+                  style="display: flex; 
+                  flex-direction: column;
+                  width: 100%;
+                  max-width: 440px;
+                  padding: 30px 40px;
+                  border-radius: 15px;
+                  box-shadow: 0px 8px 40px rgba(128, 128, 128, 0.15);">
+                  <h3>Information</h3>
+                  <p>Be sure to enable "Remote Login" on your Mac.<br>Once it is done, fill in the form with the correct SSH info.
+                    <a target="_blank" rel="noopener noreferrer" href="https://support.apple.com/en-gb/guide/mac-help/mchlp1066/mac">More info</a> </p>
+                  <br>
+                    <span>
+                      <label><i class="icon icon-computer_16"></i></label>
+                      <input type="text" name="name" placeholder="computer name" required>
+                    </span>
+                    <span>
+                      <label><i class="icon icon-contact-card_16"></i></label>
+                      <input type="text" name="ip" placeholder="IP" required>
+                    </span>
+                    <span>
+                      <label><i class="icon icon-user_16"></i></label>
+                      <input type="text" name="username" placeholder="username" required>
+                    </span>
+                    <span>
+                      <label><i class="icon icon-secure_16"></i></label>
+                      <input type="password" name="password" placeholder="password" required>
+                    </span>
+                    <br>
+                    <div class="docs-example docs-example--spacing">
+                      <button type="submit" class="md-button md-button--blue">Add</button>
+                    </div>
+                  </form>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+    <!-- :::::::::: -->
+<div id="edit-computer-modal" class="md-modal__backdrop fade in" style="display: none;">
+  <div
+    role="dialog"
+    id="react-aria-modal-dialog"
+    class="md-modal md-modal--small in"
+    aria-labelledby="modal3"
+  >
+    <div class="md-modal__content">
+      <div class="md-modal__flex-container">
+        <div class="md-modal__header">
+          <span class="md-modal__title">Edit Computer Info</span>
+          <span class="md-modal__message">Fill the form with the correct SSH info.</span>
+          <button class="md-close md-modal__close"></button>
+        </div>
+        <div class="md-modal__body" style="justify-content: center;align-items: center;">
+          <form id="updateComputerForm" style="display: flex;flex-direction: column;" action="/computers/" method="UPDATE">
+            <span style="margin-bottom: 5%;">
+              <label><i class="icon icon-computer_16"></i></label>
+              <input type="text" name="name" placeholder="computer name" required>
+            </span>
+            <span style="margin-bottom: 5%;">
+              <label><i class="icon icon-contact-card_16"></i></label>
+              <input type="text" name="ip" placeholder="IP" required>
+            </span>
+            <span style="margin-bottom: 5%;">
+              <label><i class="icon icon-user_16"></i></label>
+              <input type="text" name="username" placeholder="username" required>
+            </span>
+            <span style="margin-bottom: 5%;">
+              <label><i class="icon icon-secure_16"></i></label>
+              <input type="password" name="password" placeholder="password" required>
+            </span>
+          </form>
+        </div>
+        <div class="md-modal__footer">
+          <button
+            class="cancel-button md-button md-button--36 md-button--default"
+            alt="Close Modal"
+            type="button"
+            aria-label="Close Modal"
+          >
+            <span class="md-button__children" style="opacity: 1;">Cancel</span>
+          </button>
+          <button
+            id="updateComputerSubmitBtn"
+            class="md-button md-button--36 md-button--blue"
+            alt="Submit Form"
+            type="submit"
+            form="updateComputerForm"
+            aria-label="Submit Form"
+          >
+            <span class="md-button__children" style="opacity: 1;">OK</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
   <!-- :::::::::: -->
 
@@ -267,6 +689,30 @@
                       </label>
                     </div>
                  </div>
+                 <div style="display: flex;justify-content: space-between;">
+                   <div>
+                      <label class="md-label" for="textArea">Webex Devices</label><br><br>
+                      <input type="checkbox" id="selectAllWebexDevices" name="selectAllWebexDevices"/> Select All<br>
+                      <ul>
+                      <% for (device of devices){ %>
+                        <li>
+                          <input type="checkbox" class="checkboxAllWebexDevices" name="selectedWebexDevices" value="<%=device.id%>"/> <%= device.displayName %> 
+                        </li>
+                      <% } %>
+                      </ul>
+                   </div>
+                   <div>
+                      <label class="md-label" for="textArea">Computers</label><br><br>
+                      <input type="checkbox" id="selectAllComputers" name="selectAllComputers"/> Select All<br>
+                      <ul>
+                      <% for (computer of computers){ %>
+                        <li>
+                          <input type="checkbox" class="checkboxAllComputers" name="selectedComputers" value="<%=computer.id%>"/> <%= computer.name %> 
+                        </li>
+                      <% } %>
+                      </ul>
+                   </div>
+                 </div>
                 </div>
               </form>
             </div>
@@ -314,6 +760,47 @@
 
   <!-- ::::::::::: -->
 
+  <div id="edit-macro-modal" class="md-modal__backdrop fade in" style="display: none;">
+    <div role="dialog" id="react-aria-modal-dialog" class="md-modal md-modal--large in" aria-labelledby="modal5">
+      <div class="md-modal__content" style="min-height: auto;">
+        <div class="md-modal__flex-container">
+          <div class="md-modal__header">
+            <span class="md-modal__title">Macro Name</span>
+            <span class="md-modal__message">Here you can edit the macro &nbsp; <i class="icon icon-transcript_20"></i></span>
+            <button class="md-close md-modal__close close-save-modal"></button>
+          </div>
+          <div class="md-modal__body">
+              <div style="overflow-y: scroll; border: dashed #00a0d0 2.5px; margin: 1%; padding: 1%;background-color: rgb(222, 222, 222);">
+                <pre id="macro-editor-content" contenteditable="true">
+                </pre>
+              </div>
+              <div style="
+              display: none;
+              justify-content: center;
+              margin: 1%; padding: 1%;
+              border: 1px solid;
+              color: red;">
+                <pre id="macro-logger" style="background-color: #dedede;width: 100%;overflow: scroll;"></pre>
+              </div>
+            <form id="saveMacroChangesForm" method="POST" action="/updateMacroOnDevice">
+              <input type="text" name="deviceId" value="" hidden/>
+              <input type="text" name="macroName" value="" hidden/>
+            </form>
+          </div>
+          <div class="md-modal__footer">
+            <button id="save-macro-changes-btn" class="md-button md-button--36 md-button--blue" alt="Submit Form" type="submit" form="saveMacroChangesForm"
+              aria-label="Submit Form">
+              <span class="md-button__children" style="opacity: 1;">Save</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ::::::::::: -->
+
+
   <div id="notification" class="notification" hidden>
     <div class="md-alert md-alert--success">
       <div class="md-alert__icon"></div>
@@ -333,6 +820,21 @@
 
   <script>
     $(document).ready(function () {
+
+      let searchParams = new URLSearchParams(window.location.search)
+      if(searchParams.has('page')){
+        const page = searchParams.get('page')
+        if(page === 'computers'){
+          $("#page-label").text("Computers");
+          $('#webex-devices-container').hide()
+          $('#computers-container').css({display: "flex"}); //show
+        }
+        else if(page === 'webex-devices'){
+          $("#page-label").text("Webex Devices");
+          $('#computers-container').hide();
+          $('#webex-devices-container').css({display: "flex"}); //show
+        }
+      }
 
       var timer = null;
 
@@ -358,7 +860,73 @@
         }, 5000);
       }
 
+      $(".switch-page").on("click", function () {
+        const label = $("#page-label").text();
+        if(label === "Computers"){
+          $("#page-label").text("Webex Devices");
+          $('#computers-container').hide();
+          $('#webex-devices-container').css({display: "flex"}); //show
+        }
+        else{
+          $("#page-label").text("Computers");
+          $('#webex-devices-container').hide()
+          $('#computers-container').css({display: "flex"}); //show
+        }
+      });
+
+      $(".volumeSlider").on("mouseup", function () {
+        const deviceId = $(this).data('device_id')
+        const volumeValue = $(this).val()
+        console.log("ok", deviceId, volumeValue)
+        const data = "deviceId="+ deviceId + "&volumeLevel=" + volumeValue;
+        $.ajax({
+                type: "POST",
+                url: "/setVolume",
+                dataType: 'json',
+                data: data
+          })
+          .done(
+                function (response) {
+                  if (response.code === "204") {
+                    showNotification("md-alert--success", "Success", `Volume set to ${volumeValue}`)
+                  } else if (response.code === "500") {
+                    showNotification("md-alert--error", "Error", "error : " + response.msg)
+                  }
+                }
+          );
+      });
+
+      // $(".ultrasoundVolumeSlider").on("mouseup", function () {
+      //   const deviceId = $(this).data('device_id')
+      //   const volumeValue = $(this).val()
+      //   console.log("ok", deviceId, volumeValue)
+      //   const data = "deviceId="+ deviceId + "&ultrasoundLevel=" + volumeValue;
+      //   $.ajax({
+      //           type: "POST",
+      //           url: "/setUltrasound",
+      //           dataType: 'json',
+      //           data: data
+      //     })
+      //     .done(
+      //           function (response) {
+      //             if (response.code === "204") {
+      //               showNotification("md-alert--success", "Success", `Ultrasound set to ${volumeValue}`)
+      //             } else if (response.code === "500") {
+      //               showNotification("md-alert--error", "Error", "error : " + response.msg)
+      //             }
+      //           }
+      //     );
+      // });
+
       $(".md-close").on("click", function () {
+        console.log("close");
+        $(this).closest('.md-modal__backdrop').hide()
+        $('#webex-devices-container').css({'position':'unset','overflow':'unset'});
+        $('#computers-container').css({'position':'unset','overflow':'unset'});
+      });
+
+
+      $(".cancel-button").on("click", function () {
         console.log("close");
         $(this).closest('.md-modal__backdrop').hide()
       });
@@ -385,6 +953,68 @@
 
       $("#close_add-macro-modal").on("click", function () {
         $("#add-macro-modal").hide()
+      });
+
+      $(document).on("submit", '.restartDeviceForm', function (e) {
+        e.preventDefault();
+        var form = $(this);
+        var url = form.attr('action');
+        if (confirm('Do you really want to reboot this device ?')) {
+          $.ajax({
+                type: "POST",
+                url: url,
+                dataType: 'json',
+                data: form.serialize()
+          })
+          .done(
+                function (response) {
+                  if (response.code === "204") {
+                    showNotification("md-alert--success", "Success", "Device Rebooting")
+                  } else if (response.code === "500") {
+                    showNotification("md-alert--error", "Error", "error : " + response.msg)
+                  }
+                }
+          );
+        }
+      });
+
+      $(document).on("submit", '.deactivateStandbyForm, .activateStandbyForm', function (e) {
+        e.preventDefault();   
+        var form = $(this);
+        var url = form.attr('action');
+
+        $.ajax({
+            type: "POST",
+            url: url,
+            dataType: 'json',
+            data: form.serialize()
+          })
+        .done(
+            function (response) {
+              if (response.code === "204") {
+                showNotification("md-alert--success", "Success", response.msg)
+              } else if (response.code === "500") {
+                showNotification("md-alert--error", "Error", "error : " + response.msg)
+              }
+            }
+        );
+      });
+
+      $(".edit-macro-btn").on("click", function () {
+        var deviceId = $(this).data('device_id');
+        var macroId = $(this).data('macro_id');
+        var macroName = $(this).data('macro_name');
+        var macroContent = $(this).data('macro_content');
+        var macroContentStringified = JSON.stringify(macroContent)
+        $('#webex-devices-container').css({'position':'fixed','overflow':'hidden'});
+        $('#computers-container').css({'position':'fixed','overflow':'hidden'});
+        $('#macro-editor-content').text(JSON.parse(macroContentStringified));
+        $('#edit-macro-modal').find('.md-modal__title').text(macroName);
+        $('#saveMacroChangesForm :input[name=deviceId]').val(deviceId);
+        $('#saveMacroChangesForm :input[name=macroName]').val(macroName);
+        $("#macro-logger").text("")
+        $("#macro-logger").closest("div").hide()
+        $('#edit-macro-modal').show()
       });
 
       //To enable or disable macro on installation
@@ -414,7 +1044,203 @@
           );
       });
 
+      $(document).on("click", '.edit-computer-btn', function (e) {
+        var computerId = $(this).data('id');
+        var computerName = $(this).data('name');
+        var computerIp = $(this).data('ip');
+        var sshUsername = $(this).data('username');
+        var sshPassword = $(this).data('password');
+        console.log(computerId, computerName, sshUsername, sshPassword)
+        $("#updateComputerForm").attr('action', `/computers/update/${computerId}`);
+        $("#updateComputerForm :input[name=name]").val(computerName)
+        $("#updateComputerForm :input[name=ip]").val(computerIp)
+        $("#updateComputerForm :input[name=username]").val(sshUsername)
+        $("#updateComputerForm :input[name=password]").val(sshPassword)
+        $("#edit-computer-modal").show()
+      });
 
+      $(document).on("submit", '.computer-action-form', function (e) {
+        e.preventDefault();
+        var form = $(this);
+        var data = new FormData(this)
+        var url = form.attr('action');
+        if(!form.serialize().includes('bluetooth')){
+          data.append('bluetooth', '0');
+        }
+        if(!form.serialize().includes('closeApps'))
+          data.append('closeApps', '0');
+        $.ajax({
+          url: url,
+          type: 'POST',
+          data: data,
+          processData: false,
+          contentType: false
+        })
+        .done(
+              function (response) {
+                if (response.code === "204") {
+                  document.location.href = "/advanced?page=computers"
+                  showNotification("md-alert--success", "Success", "Configuration send")
+                  setTimeout(() => {
+                    $('#loader').show()
+                  }, "800"); 
+                } else if (response.code === "500") {
+                  showNotification("md-alert--error", "Error", "error : " + response.msg)
+                }
+              }
+        );
+      });
+
+      $(document).on("submit", '.deleteComputerForm', function (e) {
+        e.preventDefault();
+        var form = $(this);
+        var url = form.attr('action');
+        if (confirm('Do you really want to delete this computer ?')) {
+          $.ajax({
+                type: "POST",
+                url: url,
+                dataType: 'json',
+                data: form.serialize() // serializes the form's elements.
+          })
+          .done(
+                function (response) {
+                  if (response.code === "204") {
+                    document.location.href = '/advanced?page=computers'
+                    showNotification("md-alert--success", "Success", "Computer Deleted")
+                    setTimeout(() => {
+                      $('#loader').show()
+                    }, "1000");
+                  } else if (response.code === "500") {
+                    showNotification("md-alert--error", "Error", "error : " + response.msg)
+                  }
+                }
+          );
+        }
+      });
+
+      $(document).on("submit", '.uploadBrandingForm', async function (e) {
+        console.log("inside")
+        e.preventDefault();
+        var form = $(this);
+        var url = form.attr('action');
+        $.ajax({
+          url: url,
+          type: 'POST',
+          data: new FormData(this),
+          processData: false,
+          contentType: false
+        }).done(
+          function (response) {
+            if (response.code === "400") {
+              showNotification("md-alert--error", "Error", response.msg);
+            }
+            else{
+              location.reload();
+              showNotification("md-alert--success", "Success", "ok");
+              setTimeout(() => {
+                $('#loader').show()
+              }, "1000"); 
+            }
+          }
+        );
+      });
+
+
+      $(document).on("submit", '.clearBrandingForm', function (e) {
+        e.preventDefault();
+        var form = $(this);
+        var url = form.attr('action');
+        var img = form.closest("td").find("img");
+        var btn = form.find(".clear-branding-button")
+        var p = form.closest("td").find("p");
+        if (confirm('Do you really want to clear the branding from this device ? It will remove the custom wallpaper, the brand background image, and the logo files from the device.')) {
+          $.ajax({
+                type: "POST",
+                url: url,
+                dataType: 'json',
+                data: form.serialize() // serializes the form's elements.
+          })
+          .done(
+                function (response) {
+                  if (response.code === "204") {
+                    showNotification("md-alert--success", "Success", "Branding Cleared")
+                    p.show()
+                    img.remove()
+                    btn.remove()
+                  } else if (response.code === "500") {
+                    showNotification("md-alert--error", "Error", "error : " + response.msg)
+                  }
+                }
+          );
+        }
+      });
+
+      $(document).on("change", '.brandingInput', function (e) {
+        const filename = $(this).val().split('\\').pop();
+        $(this).closest("td").find("p").text(filename);
+        $(this).closest("div").find(".brandingBtnContainer").css("display", "flex")
+      });
+
+      $(document).on("change", '.computerBackgroundInput', function (e) {
+        const filename = $(this).val().split('\\').pop();
+        $(this).closest("label").find("p").text(filename);
+        $(this).closest("label").css("background", "#02aa507a");
+        $(this).closest("form").find("img").hide();
+      });
+
+      $(document).on("submit", '#addNewComputerForm', function (e) {
+        e.preventDefault();
+        var form = $(this);
+        var url = form.attr('action');
+        $.ajax({
+              type: "POST",
+              url: url,
+              dataType: 'json',
+              data: form.serialize() // serializes the form's elements.
+        })
+        .done(
+              function (response) {
+                if (response.code === "204") {
+                  location.reload();
+                  showNotification("md-alert--success", "Success", "New Computer Added")
+                  setTimeout(() => {
+                      $('#loader').show()
+                  }, "1000");
+                  document.location.href = "/advanced?page=computers"
+                } else if (response.code === "500") {
+                  showNotification("md-alert--error", "Error", "error : " + response.msg)
+                }
+              }
+        );
+      });
+
+      $(document).on("submit", '#updateComputerForm', function (e) {
+        e.preventDefault();
+        var form = $(this);
+        var url = form.attr('action');
+        $.ajax({
+              type: "POST",
+              url: url,
+              dataType: 'json',
+              data: form.serialize() // serializes the form's elements.
+        })
+        .done(
+              function (response) {
+                if (response.code === "204") {
+                  showNotification("md-alert--success", "Success", "Computer info Updated")
+                  $('#updateComputerSubmitBtn').replaceWith(`
+                  <button class="md-button md-button--36" id="md-button-85" data-md-event-key="md-button-85" disabled="" alt="Test" type="button" data-md-keyboard-key="test-me" aria-label="Test" tabindex="0">
+                    <div>
+                      <div class="md-loading"><span class="md-loading__icon"></span><span class="md-loading__icon"></span><span class="md-loading__icon"></span></div>
+                    </div><span class="md-button__children" style="opacity: 0;">Test Me</span>
+                  </button>`)
+                  document.location.href = "/advanced?page=computers"
+                } else if (response.code === "500") {
+                  showNotification("md-alert--error", "Error", "error : " + response.msg)
+                }
+              }
+        );
+      });
 
       $(document).on("submit", '.addGithubMacroToDeviceForm', function (e) {
         $('#add-macro-modal').hide();
@@ -448,6 +1274,7 @@
                           </label>
                         </div>
                       </td>
+                      <td style="text-align:center">Relaod to edit macro</td>
                       <td>
                         <form class="deleteMacroFromDevice" action="/deleteMacroOnDevice" method="POST">
                           <input type="text" name="macroName" id="macroName" value="${macroName}" hidden>
@@ -508,6 +1335,13 @@
         });
       });
 
+      $("#selectAllWebexDevices").click(function () {
+          $(".checkboxAllWebexDevices").prop('checked', $(this).prop('checked'));
+      });
+
+      $("#selectAllComputers").click(function () {
+          $(".checkboxAllComputers").prop('checked', $(this).prop('checked'));
+      });
 
       $(document).on("submit", '#saveTemplateForm', function (e) {
         e.preventDefault();
@@ -550,6 +1384,36 @@
                 showNotification("md-alert--success", "Success", "the template has been saved")
               } else if (response.code === "500") {
                 showNotification("md-alert--error", "Error", "error : " + response.msg)
+              }
+            }
+          );
+      });
+
+      $(document).on("submit", '#saveMacroChangesForm', function (e) {
+        e.preventDefault();
+        var form = $(this)
+        var url = form.attr('action');
+        var method = form.attr('method');
+        const deviceId = $('#saveMacroChangesForm :input[name=deviceId]').val()
+        const macroName = $('#saveMacroChangesForm :input[name=macroName]').val()
+        const macroContent = $('#macro-editor-content').text()
+        $.ajax({
+            type: method,
+            url: url,
+            dataType: 'json',
+            data: `deviceId=${deviceId}&macroName=${macroName}&macroContent=${macroContent}`
+        })
+          .done(
+            function (response) {
+              if (response.code === "204") {
+                location.reload();
+                showNotification("md-alert--success", "Success", "the macro has been updated")
+                $('#edit-macro-modal').hide()
+              } else if (response.code === "500") {
+                showNotification("md-alert--error", "Error", "error : " + response.msg)
+                $("#macro-logger").text(response.msg)
+                $("#macro-logger").show()
+                $("#macro-logger").closest("div").css("display", "flex")
               }
             }
           );

@@ -8,9 +8,11 @@
   "dependencies": {
     "@momentum-ui/core": "^19.15.3",
     "@momentum-ui/icons": "^8.20.0",
+    "axios": "^0.27.2",
     "cookie-parser": "~1.4.4",
     "crypto": "^1.0.1",
     "debug": "~2.6.9",
+    "dedent": "^0.7.0",
     "dotenv": "^10.0.0",
     "ejs": "~2.6.1",
     "express": "~4.16.1",
@@ -19,6 +21,7 @@
     "mongoose": "^5.13.0",
     "morgan": "~1.9.1",
     "request": "^2.88.2",
+    "ssh2": "^1.10.0",
     "xml2js": "^0.4.23"
   }
 }

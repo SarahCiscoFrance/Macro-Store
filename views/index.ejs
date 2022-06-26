@@ -17,16 +17,29 @@
 <body>
   <%- include('./components/top-bar.ejs') %>
 
-  <div style="width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: space-evenly;">
+
+  <div class="md-button__container--small" style="position: fixed;top: 120px;right: 0px;z-index: 1;">
+    <form action="/advanced" method="GET">
+      <button id="save-button" class="md-button md-button--circle md-button--68 md-button--green" alt="Save" type="submit"
+        aria-label="Save">
+        <span class="md-button__children">
+          <i class="icon icon-calendar-add_32"></i>
+        </span>
+      </button>
+    </form>
+      <div class="md-button__label">New Template</div>
+  </div>
+
+  <div style="width: 100%; height: 90%; display: flex; flex-direction: column; justify-content: center;">
     <div class="show-grid">
       <div class="row">
-        <div class="small-9 small-centered columns">
-          <article class="card" style="margin-bottom: 0%;">
+        <div class="small-9 small-centered columns" style="background: none;border: none;">
+          <article class="card" style="margin-bottom: 0%;border-radius: 15px;">
             <div class="card-content" style="align-items: center;">
               <i class="icon icon-launch_32"></i>
               <h2>Restore Showroom to default</h2>
               <div class="docs-example docs-example--spacing">
-                <button id="restoreShowroomToDefaultBtn" type="submit" class="md-button md-button--orange">Load Default
+                <button id="restoreShowroomToDefaultBtn" type="submit" class="md-button md-button--red">Load Default
                   Template</button>
               </div>
             </div>
@@ -35,19 +48,19 @@
       </div>
 
       <div class="row">
-        <div class="small-6 small-centered columns">
+        <div class="small-6 small-centered columns" style="background: none;border: none;">
           <article style="margin-bottom: 0%;">
             <div class="card-content" style="align-items: center;">
               <i class="icon icon-activities_16"></i>
               <h2>Previous Template</h2>
             </div>
           </article>
-          <div style="overflow-y: scroll; max-height:400px;">
+          <div style="overflow-y: scroll; max-height:500px;box-shadow: 0px 8px 40px rgb(128 128 128 / 15%);border-radius: 15px;padding: 5%;">
             <% if(templates.length > 0) {%>
               <% for (template of templates) { %>
-              <article class="card" style="margin-bottom: 0%; position:relative;">
+              <article class="card" style=" position:relative;">
                 <div class="card-content" style="align-items: center;">
-                  <form id="deleteTemplateForm" method="GET" action="deleteTemplate/<%= template._id%>">
+                  <form class="deleteTemplateForm" method="GET" action="deleteTemplate/<%= template._id%>">
                     <button type="submit">
                       <i onmouseover="this.style.color='#FF0000';" onmouseout="this.style.color='';"
                       class="icon icon-delete_24" style="position:absolute; top:0; right:0; padding: 1%; cursor: pointer;"></i>
@@ -60,7 +73,7 @@
                     <button type="button" class="md-button md-button--orange load-template-btn"
                       data-title="<%= template.name %>" data-description="<%= template.description %>" 
                       data-template_id="<%= template._id %>" 
-                      data-devices="<%= template.involvedDevices.map(e => e.name) %>">Load Template</button>
+                      data-devices="<%= template.involvedWebexDevices.concat(template.involvedComputers).map(e => e.name) %>">Load Template</button>
                   </div>
                 </div>
               </article>
@@ -73,24 +86,6 @@
         </div>
       </div>
 
-    </div>
-
-    <div class="show-grid">
-      <div class="row">
-        <div class="small-9 small-centered columns">
-          <article class="card" style="margin-bottom: 0%;">
-            <div class="card-content" style="align-items: center;">
-              <i class="icon icon-file-zip_32"></i>
-              <h2>Create a new Template</h2>
-              <div class="docs-example docs-example--spacing">
-                <form action="/advanced" method="GET">
-                  <button type="submit" class="md-button md-button--orange">Create New Template</button>
-                </form>
-              </div>
-            </div>
-          </article>
-        </div>
-      </div>
     </div>
 
 
@@ -161,13 +156,11 @@
                 <span class="md-button__children" style="opacity: 1;">Cancel</span>
               </button>
               <% if (backupedDevices.length > 0) { %>
-              <!-- <form method="GET" action="/restoreShowroomToDefault"> -->
               <button id="reset-modal-btn" class="md-button md-button--36 md-button--red" alt="Submit Form"
                 type="button" aria-label="Submit Form" tabindex="0">
                 <span class="md-button__children" style="opacity: 1;">Confirm</span>
-                <!-- </button> -->
-                </form>
-                <% } %>
+              </button>
+              <% } %>
             </div>
 
           </div>
@@ -266,9 +259,9 @@
       $("#load-template-modal").hide();
     });
 
-    $(document).on("submit", '#deleteTemplateForm', function (e) {
+    $(document).on("submit", '.deleteTemplateForm', function (e) {
+      e.preventDefault();
       if (confirm('Do you really want to delete this template?')) {
-        e.preventDefault();
         var form = $(this)
         var url = form.attr('action');
         $.ajax({

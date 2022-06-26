@@ -20,19 +20,6 @@
   <%- include('./components/loader.ejs') %>
 
   <div class="main-container">
-    <div style="margin: 1%; display: flex; justify-content: center;">
-      <div class="md-button__container--small">
-        <button
-          id="resetShowroomBtn"
-          class="md-button md-button--circle md-button--56 md-activity md-activity__meetings"
-          alt="meetings" type="button" aria-label="meetings">
-          <span class="md-button__children">
-            <i class="icon icon-reset_24"></i>
-          </span>
-        </button>
-        <div class="md-button__label">Restore Showroom to default</div>
-      </div>
-    </div>
     <div class="outer-wrap">
       <div class="content">
         <main class="main-area">
@@ -110,8 +97,9 @@
                   <div style="display: flex; align-items: center;">
                     <button id="switchTable" type="button"
                       class="md-button md-button--circle md-button--blue icon icon-exchange_16"></button>
-                    <label><b>&nbsp;Select files :</b></label>
+                    <label><b>&nbsp;Switch file type (Macro/UI File)</b></label>
                   </div><br>
+                  <label><b>&nbsp;Select files :</b></label>
                   <table id="macroTable" style="text-align: justify; white-space: nowrap;">
                     <caption>macros</caption>
                     <% var cpt = 0; %>
@@ -142,7 +130,7 @@
                   </table>
 
                   <table id="panelTable" style="text-align: justify; white-space: nowrap;" hidden>
-                    <caption>panels</caption>
+                    <caption>panels/buttons</caption>
                     <% var cpt = 0; %>
                     <% for (panel of panelAvailable) { %>
                     <tr>
@@ -265,39 +253,14 @@
                     <button type='submit' class="md-button md-button--red">Remove All !</button>
                   </div>
                 </form>
-              </div><!-- .card-content -->
-            </article><!-- .card -->
-
-            <!--<article class="card">
-            <a href="#">
-              <picture class="thumbnail">
-                <img src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/222641/the-sea.jpg">
-              </picture>
-              <div class="card-content">
-                <h2>Headline goes here</h2>
-                <p>Here's to alcohol, the cause of — and solution to — all life's problems. How is education supposed to
-                  make me feel smarter?</p>
-                <p>Besides, every time I learn something new, it pushes some old stuff out of my brain. Remember when I
-                  took that home winemaking course, and I forgot how to drive?</p>
-              </div>-->
-            <!-- .card-content -->
-            <!-- </a>
-          </article>-->
-            <!-- .card -->
-
-          </section><!-- .cards -->
+              </div>
+            </article>
+          </section>
         </main>
-      </div><!-- .content -->
-    </div><!-- .outer-wrap -->
-    <!-- <div class="md-alert-banner md-alert-banner--error">
-    <div class="md-alert-banner__text">Error Alert Banner</div>
-    <div class="md-alert-banner__close" tabindex="0" role="button" aria-label="Close">
-      <i class="icon icon-cancel_16"></i>
+      </div>
     </div>
-  </div> -->
 
-    <div>
-      <!--<h2>Edit Device <i class="icon icon-edit_24"></i></h2><br>-->
+    <div style="margin-bottom: 2%;">
       <h2>Device List</h2><br>
       <table>
         <thead>
@@ -340,9 +303,26 @@
         </tr>
         <% } %>
         </tr>
-
       </table>
     </div>
+
+    <div>
+      <h2>Restore Showroom to default</h2><br>
+      <div class="card" style="display: flex; justify-content: center; padding: 1%;">
+        <div class="md-button__container--small">
+          <button
+            id="resetShowroomBtn"
+            class="md-button md-button--circle md-button--56 md-activity md-activity__meetings"
+            alt="meetings" type="button" aria-label="meetings">
+            <span class="md-button__children">
+              <i class="icon icon-reset_24"></i>
+            </span>
+          </button>
+          <div class="md-button__label">Restore</div>
+        </div>
+      </div>
+    </div>
+
   </div>
   
   <div id="notification" class="notification" hidden>

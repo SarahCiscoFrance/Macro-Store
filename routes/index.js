@@ -17,6 +17,16 @@ router.post("/deleteFile", mainController.deleteFile);
 
 router.post("/deleteMacroOnDevice", mainController.deleteMacroOnDevice);
 
+router.post("/uploadBranding", mainController.uploadBranding);
+
+router.post("/restartDevice", mainController.restartDevice);
+
+router.post("/setStandbyMode/:mode", mainController.setStandbyMode);
+
+router.post("/setVolume", mainController.setVolume);
+
+router.post("/clearBranding", mainController.clearBranding)
+
 router.post("/removeAllFile", mainController.removeAllFile);
 
 router.post("/changeMacroActivationStatus", mainController.changeMacroActivationStatus);
@@ -44,5 +54,7 @@ router.post("/githubMacro", mainController.declareGithubMacro)
 router.get("/deleteGithubMacro/:id", mainController.deleteGithubMacro)
 
 router.post("/addGithubMacroToDevice", mainController.addGithubMacroToDevice)
+
+router.post("/updateMacroOnDevice", mainController.updateMacroOnDevice)
 
 module.exports = router;
