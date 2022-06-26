@@ -437,7 +437,7 @@ module.exports = {
             "ChecksumType": "SHA512",
             "Mode": "Add",
             "Origin": "Provisioning",
-            "URL": `${process.env.BASE_URL}/uploads/${templateFolderName ? `templates/${templateFolderName}/${filename}` : `backups/${filename}` }`
+            "URL": `${process.env.BASE_URL}/uploads/${templateFolderName ? `templates/${templateFolderName.replaceAll(' ', '%20')}/${filename}` : `backups/${filename}` }`
           }
         })
 
